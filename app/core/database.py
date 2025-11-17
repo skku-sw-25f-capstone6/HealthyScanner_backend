@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 # 나중에 .env에서 읽게 바꿔도 됨
 MYSQL_USER = "root"
-MYSQL_PASSWORD = "password"
+MYSQL_PASSWORD = "3306"
 MYSQL_HOST = "127.0.0.1"
 MYSQL_PORT = 3306
 MYSQL_DB = "healthy_scanner"
