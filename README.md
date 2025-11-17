@@ -7,7 +7,9 @@ python -m venv .venv
 맥: source .venv/bin/activate
 
 pip install -r requirements.txt로 필요한 것들 설치
-현재 설치한 것 : pip install cryptography
+현재 설치한 것 : 
+
+pip install cryptography
 
 
 healthy_scanner_backend/app/routers에서 api 구현하면 됨
