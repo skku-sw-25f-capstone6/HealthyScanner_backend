@@ -9,3 +9,6 @@ python -m venv .venv
 pip install -r requirements.txt로 필요한 것들 설치
 
 healthy_scanner_backend/app/routers에서 api 구현하면 됨
+
+(1) 각각의 폴더에 대한 부연 설명
+utils : JWT 발급 모듈 처리 폴더.
