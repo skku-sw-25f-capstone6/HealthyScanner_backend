@@ -30,3 +30,12 @@ def verify_jwt(token: str):
         return None  # 토큰 만료
     except jwt.InvalidTokenError:
         return None  # 잘못된 토큰
+
+def decode_jwt(token: str):
+    try:
+        decoded = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return decoded
+    except jwt.ExpiredSignatureError:
+        return None
+    except jwt.InvalidTokenError:
+        return None
