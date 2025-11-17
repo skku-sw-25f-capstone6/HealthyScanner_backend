@@ -1,4 +1,4 @@
-# app/dal/nutrition_dal.py
+# app/DAL/nutrition_DAL.py
 from typing import List, Optional
 from uuid import uuid4
 
@@ -8,7 +8,7 @@ from app.models.nutrition import Nutrition
 from app.schemas.nutrition import NutritionCreate, NutritionUpdate
 
 
-class NutritionDal:
+class NutritionDAL:
     @staticmethod
     def create(db: Session, nutrition_in: NutritionCreate) -> Nutrition:
         nutrition = Nutrition(

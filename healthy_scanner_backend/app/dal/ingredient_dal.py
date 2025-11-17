@@ -1,4 +1,4 @@
-# app/dal/ingredient_dal.py
+# app/DAL/ingredient_DAL.py
 from typing import List, Optional
 from uuid import uuid4
 
@@ -8,7 +8,7 @@ from app.models.ingredient import Ingredient
 from app.schemas.ingredient import IngredientCreate, IngredientUpdate
 
 
-class IngredientDal:
+class IngredientDAL:
     @staticmethod
     def create(db: Session, ing_in: IngredientCreate) -> Ingredient:
         ingredient = Ingredient(

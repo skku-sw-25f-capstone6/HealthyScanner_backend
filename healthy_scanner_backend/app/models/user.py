@@ -22,6 +22,9 @@ class User(Base):
     refresh_token_expires_at = Column(Text, nullable=True)
     refresh_token_revoked_at = Column(Text, nullable=True)
 
+    # 프로필 이미지
+    profile_image_url = Column(String, nullable=True)
+
     created_at = Column(DateTime(timezone=False), nullable=False, server_default=func.now())
     updated_at = Column(
         DateTime(timezone=False),

@@ -6,6 +6,8 @@ CREATE TABLE user (
     allergies  JSON,                                 -- JSON 문자열
     -- scan_count INTEGER DEFAULT 0,                    -- 이건 나중에 너무 불편하다 싶으면 풀자
     
+    profile_image_url TEXT,
+
     -- 🔒 토큰 관리 추가 부분(로그인 관련)
     refresh_token_hash TEXT,                         -- refresh_token 해시 (원문 저장 금지)
 	refresh_token_issued_at TEXT,                    -- 발급 시각

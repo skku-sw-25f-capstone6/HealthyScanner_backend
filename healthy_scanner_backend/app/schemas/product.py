@@ -1,8 +1,11 @@
 # app/schemas/product.py
 from datetime import datetime
-from typing import Optional
-
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
+
+from app.schemas.nutrition import NutritionOut
+from app.schemas.ingredient import IngredientOut
+
 
 
 class ProductBase(BaseModel):
@@ -46,5 +49,13 @@ class ProductOut(ProductBase):
     id: str
     created_at: datetime
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ProductDetailOut(BaseModel):
+    product: ProductOut
+    nutritions: Optional[List[NutritionOut]] = None
+    ingredients: Optional[List[IngredientOut]] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -8,6 +8,8 @@ CREATE TABLE user (
     conditions TEXT,                                   -- JSON 문자열
     allergies  TEXT,                                   -- JSON 문자열
 
+    profile_image_url TEXT,
+
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
     deleted_at TEXT,

@@ -1,7 +1,7 @@
 # app/main.py
 from fastapi import FastAPI
 
-from app.core.db import Base, engine
+from app.core.database import Base, engine
 from app.routers import user_router, product_router, nutrition_router, ingredient_router, scan_history_router, user_daily_score_router
 
 Base.metadata.create_all(bind=engine)

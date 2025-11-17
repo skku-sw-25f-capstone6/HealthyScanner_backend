@@ -26,9 +26,18 @@ class UserUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")  # 이상한 필드는 막기
 
 
-class UserOut(UserBase):
+class UserOut(BaseModel):
     id: str
-    created_at: datetime
-    updated_at: datetime
+    name: Optional[str]
+    habits: Optional[list[str]]
+    conditions: Optional[list[str]]
+    allergies: Optional[list[str]]
+    profile_image_url: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MyPageOut(BaseModel):
+    name: str
+    scan_count: int
+    profile_image_url: Optional[str] = None

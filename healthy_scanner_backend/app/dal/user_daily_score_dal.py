@@ -1,4 +1,4 @@
-# app/dal/user_daily_score_dal.py
+# app/DAL/user_daily_score_DAL.py
 from datetime import date
 from typing import List, Optional
 
@@ -8,7 +8,7 @@ from app.models.user_daily_score import UserDailyScore
 from app.schemas.user_daily_score import UserDailyScoreCreate, UserDailyScoreUpdate
 
 
-class UserDailyScoreDal:
+class UserDailyScoreDAL:
     @staticmethod
     def create(db: Session, uds_in: UserDailyScoreCreate) -> UserDailyScore:
         # max_severity Enum -> str

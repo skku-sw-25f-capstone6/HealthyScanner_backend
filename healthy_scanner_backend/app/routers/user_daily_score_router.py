@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.dal.user_daily_score_dal import UserDailyScoreDal
+from app.DAL.user_daily_score_DAL import UserDailyScoreDAL
 from app.schemas.user_daily_score import (
     UserDailyScoreCreate,
     UserDailyScoreUpdate,
@@ -28,7 +28,7 @@ def create_user_daily_score(
     uds_in: UserDailyScoreCreate,
     db: Session = Depends(get_db),
 ):
-    uds = UserDailyScoreDal.create(db, uds_in)
+    uds = UserDailyScoreDAL.create(db, uds_in)
     return uds
 
 
@@ -41,7 +41,7 @@ def get_user_daily_score(
     local_date: date,
     db: Session = Depends(get_db),
 ):
-    uds = UserDailyScoreDal.get(db, user_id, local_date)
+    uds = UserDailyScoreDAL.get(db, user_id, local_date)
     if not uds:
         raise HTTPException(status_code=404, detail="User daily score not found")
     return uds
@@ -59,7 +59,7 @@ def list_user_daily_scores(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    items = UserDailyScoreDal.list(
+    items = UserDailyScoreDAL.list(
         db,
         user_id=user_id,
         date_from=date_from,
@@ -80,7 +80,7 @@ def update_user_daily_score(
     uds_in: UserDailyScoreUpdate,
     db: Session = Depends(get_db),
 ):
-    uds = UserDailyScoreDal.update(db, user_id, local_date, uds_in)
+    uds = UserDailyScoreDAL.update(db, user_id, local_date, uds_in)
     if not uds:
         raise HTTPException(status_code=404, detail="User daily score not found")
     return uds
@@ -95,7 +95,7 @@ def delete_user_daily_score(
     local_date: date,
     db: Session = Depends(get_db),
 ):
-    ok = UserDailyScoreDal.soft_delete(db, user_id, local_date)
+    ok = UserDailyScoreDAL.soft_delete(db, user_id, local_date)
     if not ok:
         raise HTTPException(status_code=404, detail="User daily score not found")
     return

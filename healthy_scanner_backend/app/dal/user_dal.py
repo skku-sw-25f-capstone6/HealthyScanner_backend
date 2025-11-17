@@ -1,4 +1,4 @@
-# app/dal/user_dal.py
+# app/DAL/user_DAL.py
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
@@ -9,7 +9,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserUpdate
 
 
-class UserDal:
+class UserDAL:
     @staticmethod
     def create(db: Session, user_in: UserCreate) -> User:
         new_user = User(
@@ -73,3 +73,5 @@ class UserDal:
         user.deleted_at = datetime.utcnow()
         db.commit()
         return True
+    
+    

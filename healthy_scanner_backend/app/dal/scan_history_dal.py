@@ -1,4 +1,4 @@
-# app/dal/scan_history_dal.py
+# app/DAL/scan_history_DAL.py
 from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
@@ -9,7 +9,7 @@ from app.models.scan_history import ScanHistory
 from app.schemas.scan_history import ScanHistoryCreate, ScanHistoryUpdate
 
 
-class ScanHistoryDal:
+class ScanHistoryDAL:
     @staticmethod
     def create(db: Session, sh_in: ScanHistoryCreate) -> ScanHistory:
         scanned_at = sh_in.scanned_at or datetime.utcnow()

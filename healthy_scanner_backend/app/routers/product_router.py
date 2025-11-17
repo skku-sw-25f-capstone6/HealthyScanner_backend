@@ -1,12 +1,13 @@
 # app/routers/product_router.py
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.dal.product_dal import ProductDal
-from app.schemas.product import ProductCreate, ProductUpdate, ProductOut
+from app.DAL.product_DAL import ProductDAL
+from app.schemas.product import ProductCreate, ProductUpdate, ProductOut, ProductDetailOut
+from app.services.product_service import ProductService
 
 router = APIRouter(
     prefix="/v1/products",
@@ -23,7 +24,7 @@ def create_product(
     product_in: ProductCreate,
     db: Session = Depends(get_db),
 ):
-    product = ProductDal.create(db, product_in)
+    product = ProductDAL.create(db, product_in)
     return product
 
 
@@ -35,7 +36,7 @@ def get_product(
     product_id: str,
     db: Session = Depends(get_db),
 ):
-    product = ProductDal.get(db, product_id)
+    product = ProductDAL.get(db, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
@@ -50,7 +51,7 @@ def list_products(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    products = ProductDal.list(db, skip=skip, limit=limit)
+    products = ProductDAL.list(db, skip=skip, limit=limit)
     return products
 
 
@@ -63,7 +64,7 @@ def update_product(
     product_in: ProductUpdate,
     db: Session = Depends(get_db),
 ):
-    product = ProductDal.update(db, product_id, product_in)
+    product = ProductDAL.update(db, product_id, product_in)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
@@ -77,7 +78,30 @@ def delete_product(
     product_id: str,
     db: Session = Depends(get_db),
 ):
-    ok = ProductDal.delete(db, product_id)
+    ok = ProductDAL.delete(db, product_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Product not found")
     return
+
+
+@router.get(
+    "/{product_id}/detail",
+    response_model=ProductDetailOut,
+)
+def get_product_detail(
+    product_id: str,
+    with_nutrition: bool = Query(True),
+    with_ingredient: bool = Query(True),
+    db: Session = Depends(get_db),
+):
+    service = ProductService(db)
+    result = service.get_product_detail(
+        product_id=product_id,
+        with_nutrition=with_nutrition,
+        with_ingredient=with_ingredient,
+    )
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    return result

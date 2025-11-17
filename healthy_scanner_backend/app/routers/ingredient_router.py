@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.dal.ingredient_dal import IngredientDal
+from app.DAL.ingredient_DAL import IngredientDAL
 from app.schemas.ingredient import IngredientCreate, IngredientUpdate, IngredientOut
 
 router = APIRouter(
@@ -23,7 +23,7 @@ def create_ingredient(
     ing_in: IngredientCreate,
     db: Session = Depends(get_db),
 ):
-    ingredient = IngredientDal.create(db, ing_in)
+    ingredient = IngredientDAL.create(db, ing_in)
     return ingredient
 
 
@@ -35,7 +35,7 @@ def get_ingredient(
     ingredient_id: str,
     db: Session = Depends(get_db),
 ):
-    ingredient = IngredientDal.get(db, ingredient_id)
+    ingredient = IngredientDAL.get(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     return ingredient
@@ -51,7 +51,7 @@ def list_ingredients(
     product_id: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    ingredients = IngredientDal.list(
+    ingredients = IngredientDAL.list(
         db, skip=skip, limit=limit, product_id=product_id
     )
     return ingredients
@@ -66,7 +66,7 @@ def update_ingredient(
     ing_in: IngredientUpdate,
     db: Session = Depends(get_db),
 ):
-    ingredient = IngredientDal.update(db, ingredient_id, ing_in)
+    ingredient = IngredientDAL.update(db, ingredient_id, ing_in)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     return ingredient
@@ -80,7 +80,7 @@ def delete_ingredient(
     ingredient_id: str,
     db: Session = Depends(get_db),
 ):
-    ok = IngredientDal.delete(db, ingredient_id)
+    ok = IngredientDAL.delete(db, ingredient_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Ingredient not found")
     return

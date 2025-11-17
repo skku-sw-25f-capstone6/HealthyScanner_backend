@@ -1,4 +1,4 @@
-# app/dal/product_dal.py
+# app/DAL/product_DAL.py
 from typing import List, Optional
 from uuid import uuid4
 
@@ -8,7 +8,7 @@ from app.models.product import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 
 
-class ProductDal:
+class ProductDAL:
     @staticmethod
     def create(db: Session, product_in: ProductCreate) -> Product:
         product = Product(

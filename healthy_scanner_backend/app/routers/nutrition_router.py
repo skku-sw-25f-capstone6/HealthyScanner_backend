@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.dal.nutrition_dal import NutritionDal
+from app.DAL.nutrition_DAL import NutritionDAL
 from app.schemas.nutrition import NutritionCreate, NutritionUpdate, NutritionOut
 
 router = APIRouter(
@@ -23,7 +23,7 @@ def create_nutrition(
     nutrition_in: NutritionCreate,
     db: Session = Depends(get_db),
 ):
-    nutrition = NutritionDal.create(db, nutrition_in)
+    nutrition = NutritionDAL.create(db, nutrition_in)
     return nutrition
 
 
@@ -35,7 +35,7 @@ def get_nutrition(
     nutrition_id: str,
     db: Session = Depends(get_db),
 ):
-    nutrition = NutritionDal.get(db, nutrition_id)
+    nutrition = NutritionDAL.get(db, nutrition_id)
     if not nutrition:
         raise HTTPException(status_code=404, detail="Nutrition not found")
     return nutrition
@@ -51,7 +51,7 @@ def list_nutrition(
     product_id: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    nutritions = NutritionDal.list(
+    nutritions = NutritionDAL.list(
         db, skip=skip, limit=limit, product_id=product_id
     )
     return nutritions
@@ -66,7 +66,7 @@ def update_nutrition(
     nutrition_in: NutritionUpdate,
     db: Session = Depends(get_db),
 ):
-    nutrition = NutritionDal.update(db, nutrition_id, nutrition_in)
+    nutrition = NutritionDAL.update(db, nutrition_id, nutrition_in)
     if not nutrition:
         raise HTTPException(status_code=404, detail="Nutrition not found")
     return nutrition
@@ -80,7 +80,7 @@ def delete_nutrition(
     nutrition_id: str,
     db: Session = Depends(get_db),
 ):
-    ok = NutritionDal.delete(db, nutrition_id)
+    ok = NutritionDAL.delete(db, nutrition_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Nutrition not found")
     return

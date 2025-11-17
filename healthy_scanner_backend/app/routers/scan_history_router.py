@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.dal.scan_history_dal import ScanHistoryDal
+from app.DAL.scan_history_DAL import ScanHistoryDAL
 from app.schemas.scan_history import (
     ScanHistoryCreate,
     ScanHistoryUpdate,
@@ -27,7 +27,7 @@ def create_scan_history(
     sh_in: ScanHistoryCreate,
     db: Session = Depends(get_db),
 ):
-    scan = ScanHistoryDal.create(db, sh_in)
+    scan = ScanHistoryDAL.create(db, sh_in)
     return scan
 
 
@@ -39,7 +39,7 @@ def get_scan_history(
     scan_id: str,
     db: Session = Depends(get_db),
 ):
-    scan = ScanHistoryDal.get(db, scan_id)
+    scan = ScanHistoryDAL.get(db, scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan history not found")
     return scan
@@ -56,7 +56,7 @@ def list_scan_history(
     product_id: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
 ):
-    scans = ScanHistoryDal.list(
+    scans = ScanHistoryDAL.list(
         db,
         skip=skip,
         limit=limit,
@@ -75,7 +75,7 @@ def update_scan_history(
     sh_in: ScanHistoryUpdate,
     db: Session = Depends(get_db),
 ):
-    scan = ScanHistoryDal.update(db, scan_id, sh_in)
+    scan = ScanHistoryDAL.update(db, scan_id, sh_in)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan history not found")
     return scan
@@ -89,7 +89,7 @@ def delete_scan_history(
     scan_id: str,
     db: Session = Depends(get_db),
 ):
-    ok = ScanHistoryDal.soft_delete(db, scan_id)
+    ok = ScanHistoryDAL.soft_delete(db, scan_id)
     if not ok:
         raise HTTPException(status_code=404, detail="Scan history not found")
     return

@@ -1,3 +1,6 @@
+가상환경 생성
+python -m venv .venv
+
 가상환경 실행
 윈도우: .venv\Scripts\activate
 리눅스: source .venv/bin/activate

@@ -3,9 +3,11 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from app.models.user import User 
 
 from app.core.database import get_db
-from app.dal.user_dal import UserDal
+from app.core.auth import get_current_user
+from app.DAL.user_DAL import UserDAL
 from app.schemas.user import UserCreate, UserUpdate, UserOut
 
 router = APIRouter(
@@ -23,7 +25,7 @@ def create_user(
     user_in: UserCreate,
     db: Session = Depends(get_db),
 ):
-    user = UserDal.create(db, user_in)
+    user = UserDAL.create(db, user_in)
     return user
 
 
@@ -35,7 +37,7 @@ def get_user(
     user_id: str,
     db: Session = Depends(get_db),
 ):
-    user = UserDal.get(db, user_id)
+    user = UserDAL.get(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -50,7 +52,7 @@ def list_users(
     limit: int = 100,
     db: Session = Depends(get_db),
 ):
-    users = UserDal.list(db, skip=skip, limit=limit)
+    users = UserDAL.list(db, skip=skip, limit=limit)
     return users
 
 
@@ -63,7 +65,7 @@ def update_user(
     user_in: UserUpdate,
     db: Session = Depends(get_db),
 ):
-    user = UserDal.update(db, user_id, user_in)
+    user = UserDAL.update(db, user_id, user_in)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -77,7 +79,7 @@ def delete_user(
     user_id: str,
     db: Session = Depends(get_db),
 ):
-    ok = UserDal.soft_delete(db, user_id)
+    ok = UserDAL.soft_delete(db, user_id)
     if not ok:
         raise HTTPException(status_code=404, detail="User not found")
     # 204는 바디 없음
