@@ -34,13 +34,13 @@ def login():
 
 
 # -------------------------------------------------------------------------
-#  2) 카카오 콜백 처리 + 자동 회원가입 (SQLAlchemy)
+#  2) 카카오 콜백 처리 + 자동 회원가입
 # -------------------------------------------------------------------------
 @router.get("/auth/kakao/callback")
 def kakao_callback(code: str, db: Session = Depends(get_db)):
 
     # -------------------------
-    #  step 1) access token 요청
+    # step 1) access token 요청
     # -------------------------
     token_url = "https://kauth.kakao.com/oauth/token"
     data = {
@@ -57,7 +57,7 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
         return HTMLResponse("<body>{\"error\": \"token_failed\"}</body>")
 
     # -------------------------
-    #  step 2) 사용자 정보 요청
+    # step 2) 카카오 사용자 정보 요청
     # -------------------------
     user_info = requests.get(
         "https://kapi.kakao.com/v2/user/me",
@@ -73,14 +73,11 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
                               .get("profile_image_url")
 
     # ---------------------------------------------------------------------
-    #  step 3) DB에서 사용자 조회
+    # step 3) DB 사용자 조회/생성
     # ---------------------------------------------------------------------
     user = db.query(User).filter(User.id == kakao_user_id).first()
 
     if not user:
-        # -----------------------------------------------------------------
-        #  step 4) 최초 회원가입
-        # -----------------------------------------------------------------
         user = User(
             id=kakao_user_id,
             name=nickname,
@@ -95,16 +92,22 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
         print(f"✔ 기존 회원 로그인: {kakao_user_id}")
 
     # ---------------------------------------------------------------------
-    #  step 5) JWT 생성
+    # step 4) JWT 생성
     # ---------------------------------------------------------------------
     jwt_token = create_jwt(kakao_user_id)
 
+    # ---------------------------------------------------------------------
+    # step 5) Flutter WebView로 결과 전달
+    # ---------------------------------------------------------------------
+    # => JS로 healthy://callback URL 변경 → WebView가 intercept함
     html = f"""
     <html>
       <body>
-        {{ "jwt": "{jwt_token}", "user_id": "{kakao_user_id}" }}
+        <script>
+          window.location.href = "healthy://callback?jwt={jwt_token}&userId={kakao_user_id}";
+        </script>
       </body>
     </html>
     """
 
-    return HTMLResponse(html)
+    return HTMLResponse(html, status_code=200)
