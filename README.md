@@ -18,10 +18,15 @@ pip install -r requirements.txt로 필요한 것들 설치
 
 <MacOS>
 1. pip install cryptography
+
 2. pip install sqlalchemy pymysql
+
 3. pip install fastapi
+
 4. pip install httpx
+
 5. pip install uvicorn[standard]
+
 6. xcode-select --install (crytography가 c로 빌드되기 때문에 추가함- pip error 발생 가능성 고려)
 
 
