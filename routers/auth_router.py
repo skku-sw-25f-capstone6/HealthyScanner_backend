@@ -1,6 +1,4 @@
-# app/routers/auth_router.py
-
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -16,37 +14,52 @@ load_dotenv()
 router = APIRouter()
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
-KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_REDIRECT_URI_IOS = os.getenv("KAKAO_REDIRECT_URI_IOS")
+KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
 
-
-# -------------------------------------------------------------------------
+# ————————————————————————————————————
 #  1) 카카오 로그인 URL 리다이렉트
-# -------------------------------------------------------------------------
+# ————————————————————————————————————
 @router.get("/auth/kakao/login")
-def login():
+def login(platform: str = Query("ios")):
+    if platform == "android":
+        redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
+        # http://10.0.2.2:8000/auth/kakao/callback?platform=android
+    else:
+        redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
+        # http://localhost:8000/auth/kakao/callback?platform=ios
+    
     kakao_auth_url = (
         "https://kauth.kakao.com/oauth/authorize"
         f"?client_id={KAKAO_CLIENT_ID}"
-        f"&redirect_uri={KAKAO_REDIRECT_URI}"
+        f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
     )
     return RedirectResponse(kakao_auth_url)
 
 
 # -------------------------------------------------------------------------
-#  2) 카카오 콜백 처리 + 자동 회원가입
+#  2) 카카오 콜백 처리 + 자동 회원가입 (SQLAlchemy)
 # -------------------------------------------------------------------------
 @router.get("/auth/kakao/callback")
-def kakao_callback(code: str, db: Session = Depends(get_db)):
-
+def kakao_callback(
+    code: str,
+    platform: str = Query("ios"),
+    db: Session = Depends(get_db),
+):
+    if platform == "android":
+        redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
+    else:
+        redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
+    
     # -------------------------
-    # step 1) access token 요청
+    #  step 1) access token 요청
     # -------------------------
     token_url = "https://kauth.kakao.com/oauth/token"
     data = {
         "grant_type": "authorization_code",
         "client_id": KAKAO_CLIENT_ID,
-        "redirect_uri": KAKAO_REDIRECT_URI,
+        "redirect_uri": redirect_uri,
         "code": code,
     }
 
@@ -57,7 +70,7 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
         return HTMLResponse("<body>{\"error\": \"token_failed\"}</body>")
 
     # -------------------------
-    # step 2) 카카오 사용자 정보 요청
+    #  step 2) 사용자 정보 요청
     # -------------------------
     user_info = requests.get(
         "https://kapi.kakao.com/v2/user/me",
@@ -73,11 +86,14 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
                               .get("profile_image_url")
 
     # ---------------------------------------------------------------------
-    # step 3) DB 사용자 조회/생성
+    #  step 3) DB에서 사용자 조회
     # ---------------------------------------------------------------------
     user = db.query(User).filter(User.id == kakao_user_id).first()
 
     if not user:
+        # -----------------------------------------------------------------
+        #  step 4) 최초 회원가입
+        # -----------------------------------------------------------------
         user = User(
             id=kakao_user_id,
             name=nickname,
@@ -92,22 +108,16 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
         print(f"✔ 기존 회원 로그인: {kakao_user_id}")
 
     # ---------------------------------------------------------------------
-    # step 4) JWT 생성
+    #  step 5) JWT 생성
     # ---------------------------------------------------------------------
     jwt_token = create_jwt(kakao_user_id)
 
-    # ---------------------------------------------------------------------
-    # step 5) Flutter WebView로 결과 전달
-    # ---------------------------------------------------------------------
-    # => JS로 healthy://callback URL 변경 → WebView가 intercept함
     html = f"""
     <html>
       <body>
-        <script>
-          window.location.href = "healthy://callback?jwt={jwt_token}&userId={kakao_user_id}";
-        </script>
+        {{ "jwt": "{jwt_token}", "user_id": "{kakao_user_id}" }}
       </body>
     </html>
     """
 
-    return HTMLResponse(html, status_code=200)
+    return HTMLResponse(html)
