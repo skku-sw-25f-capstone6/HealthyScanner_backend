@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.models.user import User
 from utils.jwt_handler import create_jwt
@@ -25,11 +26,9 @@ KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
 def login(platform: str = Query("ios")):
     if platform == "android":
         redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
-        # http://10.0.2.2:8000/auth/kakao/callback?platform=android
     else:
         redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
-        # http://localhost:8000/auth/kakao/callback?platform=ios
-    
+
     kakao_auth_url = (
         "https://kauth.kakao.com/oauth/authorize"
         f"?client_id={KAKAO_CLIENT_ID}"
@@ -70,7 +69,7 @@ def kakao_callback(
     if not access_token:
         return HTMLResponse("<body>{\"error\": \"token_failed\"}</body>")
 
-    # 🔥 추가된 부분: 카카오 토큰 값 추출
+    # 🔥 카카오 토큰 값 추출
     refresh_token = token_res.get("refresh_token")
     token_type = token_res.get("token_type")
     expires_in = token_res.get("expires_in")
@@ -85,12 +84,8 @@ def kakao_callback(
     ).json()
 
     kakao_user_id = str(user_info.get("id"))
-    nickname = user_info.get("kakao_account", {}) \
-                        .get("profile", {}) \
-                        .get("nickname")
-    profile_image = user_info.get("kakao_account", {}) \
-                              .get("profile", {}) \
-                              .get("profile_image_url")
+    nickname = user_info.get("kakao_account", {}).get("profile", {}).get("nickname")
+    profile_image = user_info.get("kakao_account", {}).get("profile", {}).get("profile_image_url")
 
     # ---------------------------------------------------------------------
     #  step 3) DB에서 사용자 조회
@@ -174,21 +169,18 @@ def get_me(user: User = Depends(get_current_user)):
         "refresh_expires_in": user.refresh_expires_in,
     }
 
+
+
 # -------------------------------------------------------------
 #  🟦 Step 1) Access Token 유효성 검사 함수
 # -------------------------------------------------------------
 def is_access_token_valid(access_token: str) -> bool:
-    """
-    카카오 access_token이 아직 유효한지 확인하는 함수.
-    유효하면 True, 만료되었으면 False를 반환한다.
-    """
     url = "https://kapi.kakao.com/v1/user/access_token_info"
     headers = {"Authorization": f"Bearer {access_token}"}
-
     response = requests.get(url, headers=headers)
-
-    # 200이면 정상, 그 외는 만료 또는 잘못된 토큰
     return response.status_code == 200
+
+
 
 # -------------------------------------------------------------
 #  🟩 Step 2) Refresh Token으로 Access Token 재발급 함수
@@ -209,34 +201,26 @@ def refresh_kakao_access_token(refresh_token: str):
 
     return res.json()
 
+
+
 # -------------------------------------------------------------
 #  🟧 Step 3) Access Token 자동 갱신 통합 함수
 # -------------------------------------------------------------
-def ensure_valid_kakao_access_token(user, db: Session):
-    """
-    유저의 access_token이 만료되었으면 refresh_token으로 재발급한다.
-    최신 토큰이 항상 DB에 저장되도록 보장한다.
-    """
-
-    # Step 1) access_token 유효한지 검사
+def ensure_valid_kakao_access_token(user: User, db: Session):
     if is_access_token_valid(user.access_token):
-        return user.access_token   # 유효 → 그대로 사용 가능
+        return user.access_token
 
     print("⛔ Access Token 만료됨 → Refresh Token으로 재발급 시도")
 
-    # Step 2) refresh_token으로 재발급 요청
     refreshed = refresh_kakao_access_token(user.refresh_token)
 
-    # refresh_token 자체가 만료됐거나 카카오 문제 발생
     if not refreshed or "access_token" not in refreshed:
         print("❌ Refresh Token도 만료됨 → 재로그인 필요")
         return None
 
-    # Step 3) DB에 access_token 업데이트
     user.access_token = refreshed["access_token"]
     user.expires_in = refreshed.get("expires_in")
 
-    # 카카오가 refresh_token을 새로 줄 수도 있음
     if refreshed.get("refresh_token"):
         user.refresh_token = refreshed["refresh_token"]
         user.refresh_expires_in = refreshed.get("refresh_token_expires_in")
@@ -245,5 +229,25 @@ def ensure_valid_kakao_access_token(user, db: Session):
     db.refresh(user)
 
     print("🔄 Access Token 자동 갱신 완료!")
-
     return user.access_token
+
+
+
+# -------------------------------------------------------------------------
+#  4) 로그아웃 (/auth/logout)
+# -------------------------------------------------------------------------
+@router.post("/auth/logout")
+def logout(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    user.refresh_token = None
+    user.access_token = None
+    user.expires_in = None
+    user.refresh_expires_in = None
+    user.token_type = None
+
+    db.commit()
+    db.refresh(user)
+
+    return {"message": "logout success"}
