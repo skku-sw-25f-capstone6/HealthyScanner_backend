@@ -1,0 +1,23 @@
+# .env
+*.env
+
+# 가상환경 디렉토리
+.venv/
+venv/
+
+# Ruff, mypy, pytest caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+*.pyc
+*.pyo
+*.pyd
+
+# IDE configs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
