@@ -1,6 +1,6 @@
 # app/routers/auth_router.py
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -16,18 +16,25 @@ load_dotenv()
 router = APIRouter()
 
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
-KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+KAKAO_REDIRECT_URI_IOS = os.getenv("KAKAO_REDIRECT_URI_IOS")
+KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
 
-
-# -------------------------------------------------------------------------
+# ————————————————————————————————————
 #  1) 카카오 로그인 URL 리다이렉트
-# -------------------------------------------------------------------------
+# ————————————————————————————————————
 @router.get("/auth/kakao/login")
-def login():
+def login(platform: str = Query("android")):
+    if platform == "android":
+        redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
+        # http://10.0.2.2:8000/auth/kakao/callback?platform=android
+    else:
+        redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
+        # http://localhost:8000/auth/kakao/callback?platform=ios
+    
     kakao_auth_url = (
         "https://kauth.kakao.com/oauth/authorize"
         f"?client_id={KAKAO_CLIENT_ID}"
-        f"&redirect_uri={KAKAO_REDIRECT_URI}"
+        f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
     )
     return RedirectResponse(kakao_auth_url)
@@ -37,8 +44,16 @@ def login():
 #  2) 카카오 콜백 처리 + 자동 회원가입 (SQLAlchemy)
 # -------------------------------------------------------------------------
 @router.get("/auth/kakao/callback")
-def kakao_callback(code: str, db: Session = Depends(get_db)):
-
+def kakao_callback(
+    code: str,
+    platform: str = Query("android"),
+    db: Session = Depends(get_db),
+):
+    if platform == "android":
+        redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
+    else:
+        redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
+    
     # -------------------------
     #  step 1) access token 요청
     # -------------------------
@@ -46,7 +61,7 @@ def kakao_callback(code: str, db: Session = Depends(get_db)):
     data = {
         "grant_type": "authorization_code",
         "client_id": KAKAO_CLIENT_ID,
-        "redirect_uri": KAKAO_REDIRECT_URI,
+        "redirect_uri": redirect_uri,
         "code": code,
     }
 

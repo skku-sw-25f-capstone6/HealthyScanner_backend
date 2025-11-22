@@ -10,6 +10,8 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import JSON as MySQLJSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
 from app.core.database import Base
 
@@ -30,7 +32,7 @@ class UserDailyScore(Base):
 
     score = Column(SmallInteger, nullable=False)  # 0~100 (DB는 TINYINT UNSIGNED)
 
-    num_scans = Column(Integer, nullable=False, default=0)
+    num_scans: Mapped[int | None] = mapped_column(Integer)
     max_severity = Column(String(16), nullable=True)  # 'none' | 'info' | 'warning' | 'danger'
     decision_counts = Column(MySQLJSON, nullable=True)
 
@@ -49,5 +51,5 @@ class UserDailyScore(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-    deleted_at = Column(DateTime(timezone=False), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
     sync_state = Column(SmallInteger, nullable=False, default=1)

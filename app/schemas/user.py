@@ -41,3 +41,24 @@ class MyPageOut(BaseModel):
     name: str
     scan_count: int
     profile_image_url: Optional[str] = None
+
+class MyPageHabitIn(BaseModel):
+    habit: str
+
+class MyPageHabitOut(BaseModel):
+    habit: str
+    updated_at: datetime
+
+class MyPageConditionIn(BaseModel):
+    conditions: List[str]
+
+class MyPageConditionOut(BaseModel):
+    conditions: List[str]
+    updated_at: datetime
+
+class MyPageAllergiesIn(BaseModel):
+    allergies: List[str]
+
+class MyPageAllergiesOut(BaseModel):
+    allergies: List[str]
+    updated_at: datetime

@@ -1,5 +1,5 @@
 # app/DAL/user_DAL.py
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -70,7 +70,7 @@ class UserDAL:
         if not user:
             return False
 
-        user.deleted_at = datetime.utcnow()
+        user.deleted_at = datetime.now(timezone.utc)
         db.commit()
         return True
     

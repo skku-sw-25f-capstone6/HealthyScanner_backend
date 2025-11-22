@@ -17,14 +17,13 @@ class NutritionBase(BaseModel):
     sodium_mg: Optional[float] = None
     cholesterol_mg: Optional[float] = None
 
-    label_version: Optional[int] = 1
-
 
 class NutritionCreate(NutritionBase):
     product_id: str
+    label_version: int = 1
 
 
-class NutritionUpdate(BaseModel):
+class NutritionUpdate(NutritionBase):
     per_serving_grams: Optional[float] = None
     calories: Optional[float] = None
     carbs_g: Optional[float] = None

@@ -1,5 +1,5 @@
 # app/DAL/scan_history_DAL.py
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
@@ -101,6 +101,6 @@ class ScanHistoryDAL:
         if not scan:
             return False
 
-        scan.deleted_at = datetime.utcnow()
+        scan.deleted_at = datetime.now(timezone.utc)
         db.commit()
         return True

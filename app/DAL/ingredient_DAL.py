@@ -27,6 +27,19 @@ class IngredientDAL:
     @staticmethod
     def get(db: Session, ingredient_id: str) -> Optional[Ingredient]:
         return db.query(Ingredient).filter(Ingredient.id == ingredient_id).first()
+    
+    @staticmethod
+    def get_id_by_product_id(db: Session, product_id: str) -> Optional[Ingredient]:
+        return db.query(Ingredient).filter(Ingredient.product_id == product_id).first()
+
+    @staticmethod
+    def get_by_product_id(db: Session, product_id: str) -> List[Ingredient]:
+        return (
+            db.query(Ingredient)
+              .filter(Ingredient.product_id == product_id)
+              .all()
+        )
+
 
     @staticmethod
     def list(

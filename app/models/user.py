@@ -1,6 +1,8 @@
 from sqlalchemy import Column, String, Text, DateTime
 from sqlalchemy.dialects.mysql import JSON as MySQLJSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
 from app.core.database import Base
 
@@ -30,4 +32,5 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
     )
-    deleted_at = Column(DateTime(timezone=False), nullable=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
+
