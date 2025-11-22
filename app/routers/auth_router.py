@@ -251,3 +251,52 @@ def logout(
     db.refresh(user)
 
     return {"message": "logout success"}
+
+# -------------------------------------------------------------------------
+#  5) 카카오 계정 연결 해제(회원 탈퇴)
+# -------------------------------------------------------------------------
+@router.delete("/auth/unlink")
+def unlink_account(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    - 현재 로그인한 유저의 Kakao 계정을 unlink (서비스 연결 끊기)
+    - DB에서 refresh_token 삭제
+    - DB에서 유저 계정 soft-delete 또는 hard-delete
+    """
+
+    # Step 1) 카카오 unlink API 호출
+    kakao_unlink_url = "https://kapi.kakao.com/v1/user/unlink"
+    headers = {
+        "Authorization": f"Bearer {user.access_token}"
+    }
+
+    kakao_res = requests.post(kakao_unlink_url, headers=headers)
+
+    if kakao_res.status_code != 200:
+        print("❌ 카카오 unlink 실패:", kakao_res.text)
+        raise HTTPException(
+            status_code=400,
+            detail="Failed to unlink Kakao account"
+        )
+
+    print(f"🔗 카카오 unlink 성공: {user.id}")
+
+    # Step 2) DB 토큰 제거
+    user.access_token = None
+    user.refresh_token = None
+    user.token_type = None
+    user.expires_in = None
+    user.refresh_expires_in = None
+
+    # Step 3) 유저 삭제(soft delete)
+    # 강제 삭제하고 싶으면 db.delete(user)
+    user.deleted_at = datetime.utcnow()
+
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Account unlinked and deleted"
+    }
