@@ -3,19 +3,25 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.models.user import User 
 
+from app.models.user import User
 from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.DAL.user_DAL import UserDAL
 from app.schemas.user import UserCreate, UserUpdate, UserOut
+
+# 🔥 자동 갱신 함수 import (auth_router에서 불러옴)
+from app.routers.auth_router import ensure_valid_kakao_access_token
+
 
 router = APIRouter(
     prefix="/v1/users",
     tags=["users"],
 )
 
-
+# -------------------------------------------------------------
+# 🟦 Create User (일반 회원가입용)
+# -------------------------------------------------------------
 @router.post(
     "/",
     response_model=UserOut,
@@ -29,6 +35,9 @@ def create_user(
     return user
 
 
+# -------------------------------------------------------------
+# 🟦 Get User by ID
+# -------------------------------------------------------------
 @router.get(
     "/{user_id}",
     response_model=UserOut,
@@ -43,6 +52,9 @@ def get_user(
     return user
 
 
+# -------------------------------------------------------------
+# 🟦 List Users
+# -------------------------------------------------------------
 @router.get(
     "/",
     response_model=List[UserOut],
@@ -56,6 +68,9 @@ def list_users(
     return users
 
 
+# -------------------------------------------------------------
+# 🟦 Update User
+# -------------------------------------------------------------
 @router.patch(
     "/{user_id}",
     response_model=UserOut,
@@ -71,6 +86,9 @@ def update_user(
     return user
 
 
+# -------------------------------------------------------------
+# 🟦 Soft Delete User
+# -------------------------------------------------------------
 @router.delete(
     "/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -82,5 +100,33 @@ def delete_user(
     ok = UserDAL.soft_delete(db, user_id)
     if not ok:
         raise HTTPException(status_code=404, detail="User not found")
-    # 204는 바디 없음
     return
+
+
+# -------------------------------------------------------------
+# 🟧 현재 로그인된 사용자 정보 조회 (+ 카카오 Access Token 자동 갱신)
+# -------------------------------------------------------------
+@router.get(
+    "/me",
+    response_model=UserOut,
+)
+def get_me(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    - JWT로 현재 로그인 사용자 확인
+    - 카카오 access_token 유효성 검사
+    - 만료 시 refresh_token으로 자동 재발급
+    - 최신 사용자 정보 반환
+    """
+
+    valid_access_token = ensure_valid_kakao_access_token(current_user, db)
+
+    if not valid_access_token:
+        raise HTTPException(
+            status_code=401,
+            detail="카카오 토큰이 만료되었습니다. 다시 로그인 해주세요.",
+        )
+
+    return current_user
