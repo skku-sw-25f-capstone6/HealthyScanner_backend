@@ -1,3 +1,5 @@
+꼭 README.txt 있는 디렉토리에서 실행해주세요!!!!!!!!
+
 가상환경 생성
 python -m venv .venv
 
