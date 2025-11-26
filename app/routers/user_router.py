@@ -9,13 +9,11 @@ from app.core.database import get_db
 from app.core.auth import get_current_user
 from app.DAL.user_DAL import UserDAL
 from app.schemas.user import (
-    UserCreate, UserUpdate, UserOut,
-    UserProfileUpdate, UserProfileOut
+    UserCreate, UserUpdate, UserOut
 )
 
 # 🔥 카카오 토큰 자동 갱신 함수 import
 from app.routers.auth_router import ensure_valid_kakao_access_token
-
 
 router = APIRouter(
     prefix="/v1/users",
@@ -142,11 +140,11 @@ def get_me(
 
 @router.post(
     "/profile",
-    response_model=UserProfileOut,
+    response_model=UserOut,
     status_code=status.HTTP_200_OK,
 )
 def update_profile(
-    profile: UserProfileUpdate,
+    profile: UserUpdate,  # ⬅ UserProfileUpdate → UserUpdate 로 변경
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -179,4 +177,4 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
 
-    return {"user": current_user}
+    return current_user
