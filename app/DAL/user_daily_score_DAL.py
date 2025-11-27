@@ -1,5 +1,5 @@
 # app/DAL/user_daily_score_DAL.py
-from datetime import date
+from datetime import date, datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -123,8 +123,6 @@ class UserDailyScoreDAL:
         if not uds:
             return False
 
-        from datetime import datetime as _dt
-
-        uds.deleted_at = _dt.utcnow()
+        uds.deleted_at = datetime.now(timezone.utc)
         db.commit()
         return True

@@ -12,7 +12,6 @@ from app.routers import (
     auth_router,
     auth_user_router,
 )
-from app.models import user, product, nutrition, ingredient, scan_history, user_daily_score
 
 from app.core.database import Base, engine
 Base.metadata.create_all(bind=engine)

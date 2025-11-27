@@ -34,6 +34,18 @@ class NutritionDAL:
     @staticmethod
     def get(db: Session, nutrition_id: str) -> Optional[Nutrition]:
         return db.query(Nutrition).filter(Nutrition.id == nutrition_id).first()
+    
+    @staticmethod
+    def get_id_by_product_id(db: Session, product_id: str) -> Optional[Nutrition]:
+        return db.query(Nutrition).filter(Nutrition.product_id == product_id).first()
+
+    @staticmethod
+    def get_by_product_id(db: Session, product_id: str) -> List[Nutrition]:
+        return (
+            db.query(Nutrition)
+              .filter(Nutrition.product_id == product_id)
+              .all()
+        )
 
     @staticmethod
     def list(

@@ -33,7 +33,7 @@ pip install -r requirements.txt로 필요한 것들 설치
 
 
 <서버 가동 명령어>
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 
 
