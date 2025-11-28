@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -206,13 +206,13 @@ def refresh_kakao_access_token(refresh_token: str):
 # -------------------------------------------------------------
 #  🟧 Step 3) Access Token 자동 갱신 통합 함수
 # -------------------------------------------------------------
-def ensure_valid_kakao_access_token(user: User, db: Session): # pyright: ignore[reportArgumentType]
-    if is_access_token_valid(user.access_token):
+def ensure_valid_kakao_access_token(user: User, db: Session): 
+    if is_access_token_valid(user.access_token): # pyright: ignore[reportArgumentType]
         return user.access_token
 
     print("⛔ Access Token 만료됨 → Refresh Token으로 재발급 시도")
 
-    refreshed = refresh_kakao_access_token(user.refresh_token)
+    refreshed = refresh_kakao_access_token(user.refresh_token) # pyright: ignore[reportArgumentType]
 
     if not refreshed or "access_token" not in refreshed:
         print("❌ Refresh Token도 만료됨 → 재로그인 필요")
