@@ -206,7 +206,7 @@ def refresh_kakao_access_token(refresh_token: str):
 # -------------------------------------------------------------
 #  🟧 Step 3) Access Token 자동 갱신 통합 함수
 # -------------------------------------------------------------
-def ensure_valid_kakao_access_token(user: User, db: Session):
+def ensure_valid_kakao_access_token(user: User, db: Session): # pyright: ignore[reportArgumentType]
     if is_access_token_valid(user.access_token):
         return user.access_token
 
