@@ -1,5 +1,5 @@
 from fastapi import UploadFile, HTTPException
-
+from typing import Literal
 
 from app.schemas.scan_history import ScanHistoryOut
 from app.schemas.scan_flow import ScanResultOut
@@ -8,6 +8,8 @@ from app.services.nutrition_service import NutritionService
 from app.services.ingredient_service import IngredientService
 from app.services.product_service import ProductService
 
+
+AnalyzeType = Literal["barcode_image", "nutrition_label", "image"]
 
 class ScanFlowService:
     """
@@ -36,57 +38,68 @@ class ScanFlowService:
         barcode: str,
         image: UploadFile | None,
     ) -> ScanResultOut:
-        # 1) 바코드로 product 찾기
         product = self.product_service.get_id_by_barcode(barcode)
         if product is None:
             raise HTTPException(status_code=404, detail="Product not found")
 
-        # 2) 공통 함수 호출 (product_id 기준)
-        return await self._build_report_and_save_history(
+        return await self._scan_and_build_result(
             user_id=user_id,
             product_id=str(product.id),
             image=image,
+            nutrition_text=None,
+            analyze_type="barcode_image",
         )
     
     async def from_nutrition_text(
-            self,
-            user_id: str,
-            nutrition_text: str,
+        self,
+        user_id: str,
+        nutrition_label: str,
     ) -> ScanResultOut:
-        # 1) 스캔 + 개인화 분석 + scan_history 저장
-        scan: ScanHistoryOut = await self.scan_history_service.analyze_and_save_scan(
+        return await self._scan_and_build_result(
             user_id=user_id,
             product_id=None,
             image=None,
-            nutrition_text=nutrition_text
+            nutrition_text=nutrition_label,
+            analyze_type="nutrition_label",
         )
-
-        return ScanResultOut(
-            scan_id=scan.id,
-            product_id=None,
-            nutrition_id=None,
-            ingredient_id=None,
-        )
-
-    async def _build_report_and_save_history(
-        self,
-        user_id: str,
-        product_id: str,
-        image: UploadFile | None,
+    
+    async def from_image(
+            self,
+            user_id: str,
+            image: UploadFile | None,
     ) -> ScanResultOut:
-        # 1) 스캔 + 개인화 분석 + scan_history 저장
-        scan: ScanHistoryOut = await self.scan_history_service.analyze_and_save_scan(
+        return await self._scan_and_build_result(
             user_id=user_id,
-            product_id=product_id,   # 여기서 barcode 안 씀
+            product_id=None,
             image=image,
             nutrition_text=None,
+            analyze_type="image",
         )
 
-        # 2) nutrition / ingredient 조회
-        nutrition_id = self.nutrition_service.get_id_by_product_id(product_id)
-        ingredient_id = self.ingredient_service.get_id_by_product_id(product_id)
 
-        # 3) 응답 조립
+    async def _scan_and_build_result(
+        self,
+        user_id: str,
+        product_id: str | None,
+        image: UploadFile | None,
+        nutrition_text: str | None,
+        analyze_type: AnalyzeType,
+    ) -> ScanResultOut:
+        scan: ScanHistoryOut = await self.scan_history_service.analyze_and_save_scan(
+            user_id=user_id,
+            product_id=product_id,
+            image=image,
+            nutrition_text=nutrition_text,
+            analyze_type=analyze_type,
+        )
+
+        if product_id is not None:
+            nutrition_id = self.nutrition_service.get_id_by_product_id(product_id)
+            ingredient_id = self.ingredient_service.get_id_by_product_id(product_id)
+        else:
+            nutrition_id = None
+            ingredient_id = None
+
         return ScanResultOut(
             scan_id=scan.id,
             product_id=product_id,

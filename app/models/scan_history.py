@@ -29,7 +29,7 @@ class ScanHistory(Base):
     product_id = Column(
         String(36),
         ForeignKey("product.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
 
