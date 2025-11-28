@@ -56,25 +56,42 @@ class ScanHistoryService:
         nutrition_text: str | None,
     ) -> ScanHistoryOut:        
         
+        user = self.user_dal.get(self.db, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
         # 여기서 이미지 저장이 될 수도 있음
         # product_id가 있는 경우에만 이미지 받는 거임 (수정해야 할 수도)
-        if image is not None and product_id is not None:
-            await self.product_service.attach_image(self.db, product_id, image)
+        if product_id is not None:
+            if image is not None:
+                await self.product_service.attach_image(self.db, product_id, image)
 
-        user = self.user_dal.get(self.db, user_id)
-        product = self.product_dal.get(self.db, str(product_id))
-        nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
-        ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
+            product = self.product_dal.get(self.db, str(product_id))
+            if product_id is None:
+                raise HTTPException(404, "Product not found")
 
+            nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
+            ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
 
-        user_dict = UserOut.model_validate(user).model_dump()
-        product_dict = ProductOut.model_validate(product).model_dump()
-        nutrition_dict = (
-            NutritionOut.model_validate(nutrition).model_dump() if nutrition else None
-        )
-        ingredient_list = [
-            IngredientOut.model_validate(i).model_dump() for i in ingredients
-        ]
+            user_dict = UserOut.model_validate(user).model_dump()
+            product_dict = ProductOut.model_validate(product).model_dump()
+            nutrition_dict = (
+                NutritionOut.model_validate(nutrition).model_dump() if nutrition else None
+            )
+            ingredient_list = [
+                IngredientOut.model_validate(i).model_dump() for i in ingredients
+            ]
+        
+        else:
+            product = None
+            nutrition = None
+            ingredients = []
+            user_dict = UserOut.model_validate(user).model_dump()
+            
+            # 최소한의 정보만 넘기기
+            product_dict = {}            # 또는 {"name": None, ...} 같은 placeholder
+            nutrition_dict = {"raw_label": nutrition_text} if nutrition_text else None
+            ingredient_list = []
 
 
         # 여기서 분석 로직이 들어가야 함
@@ -87,21 +104,26 @@ class ScanHistoryService:
 
 
         # 지금은 임시 값
-        decision: ScanDecision = ScanDecision.caution
-        summary: str = "임시 분석 결과."
-        ai_total_score: int = 50
+        summary: str = ai_result.ai_total_summary
+        decision: ScanDecision = ScanDecision(ai_result.decision)
+        ai_total_score: int = ai_result.ai_total_score
 
-        conditions: List[str] = []   # 예: ["diabetes"]
-        allergies: List[str] = []    # 예: ["peanut"]
-        habits: List[str] = []       # 예: ["low_sugar"]
+        conditions: List[str] = user_dict.get("conditions") or []  # 예: ["diabetes"]
+        allergies: List[str] = user_dict.get("allergies") or []   # 예: ["peanut"]
+        habits: List[str] = user_dict.get("habits") or []      # 예: ["low_sugar"]
 
-        ai_allergy_report: Optional[str] = None
-        ai_condition_report: Optional[str] = None
-        ai_alter_report: Optional[str] = None
-        ai_vegan_report: Optional[str] = None
-        ai_total_report: Optional[str] = None
+        ai_allergy_report: Optional[str] = ai_result.ai_allergy_report
+        ai_condition_report: Optional[str] = ai_result.ai_condition_report
+        ai_alter_report: Optional[str] = ai_result.ai_alter_report
+        ai_vegan_report: Optional[str] = ai_result.ai_vegan_report
+        ai_total_report: Optional[str] = ai_result.ai_total_report
 
-        caution_factors: Optional[List[Dict[str, Any]]] = None
+        caution_factors_raw: Optional[List[str]] = ai_result.caution_factors
+        caution_factors: Optional[List[Dict[str, Any]]] = (
+            [{"factor": factor} for factor in caution_factors_raw]
+            if caution_factors_raw
+            else None
+        )
 
         scanned_at = datetime.now(timezone.utc)
 
@@ -120,7 +142,7 @@ class ScanHistoryService:
             ai_alter_report=ai_alter_report,
             ai_vegan_report=ai_vegan_report,
             ai_total_report=ai_total_report,
-            caution_factors=caution_factors,
+            caution_factors=caution_factors
         )
 
         scan = self.scan_history_dal.create(self.db, data)
