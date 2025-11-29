@@ -171,8 +171,6 @@ def kakao_callback(
     <script>
       window.onload = function() {{
         kakaoLogin.postMessage(JSON.stringify({{
-          "jwt": "{jwt_token}",
-          "user_id": "{kakao_user_id}",
           "access_token": "{access_token}",
           "refresh_token": "{refresh_token}",
           "token_type": "{token_type}",
