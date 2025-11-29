@@ -6,6 +6,7 @@ from app.routers import (
     ingredient_router,
     nutrition_router,
     scan_history_router,
+    scan_flow_router,
     user_daily_score_router,
     mypage_router,
     me_router,
@@ -29,3 +30,4 @@ app.include_router(mypage_router.router)
 app.include_router(me_router.router)    
 app.include_router(auth_router.router)
 app.include_router(auth_user_router.router)
+app.include_router(scan_flow_router.router)
