@@ -54,11 +54,12 @@ class ScanFlowService:
         self,
         user_id: str,
         nutrition_label: str,
+        image: UploadFile | None,
     ) -> ScanResultOut:
         return await self._scan_and_build_result(
             user_id=user_id,
             product_id=None,
-            image=None,
+            image=image,
             nutrition_text=nutrition_label,
             analyze_type="nutrition_label",
         )

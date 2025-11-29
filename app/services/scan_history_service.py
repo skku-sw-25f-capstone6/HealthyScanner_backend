@@ -99,6 +99,16 @@ class ScanHistoryService:
             nutrition_dict = {"raw_label": nutrition_text} if nutrition_text else None
             ingredient_list = []
 
+            if image is not None:
+                # 이미지 파일 읽기
+                image_bytes = await image.read()
+
+                b64 = base64.b64encode(image_bytes).decode("ascii")
+                
+                # content_type 사용해서 data URL 만들기
+                mime = image.content_type or "image/jpeg"
+                image_data_url = f"data:{mime};base64,{b64}"
+
         elif analyze_type == "image":
             if image is None:
                 raise HTTPException(400, "Image is required for analyze_type 'image'")

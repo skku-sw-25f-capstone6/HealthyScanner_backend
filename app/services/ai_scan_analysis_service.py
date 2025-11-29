@@ -75,7 +75,7 @@ class AiScanAnalysisService:
 
 analyze_type 값에 따라 입력 형태가 달라져:
 
-analyze_type이 "barcode_image" 또는 "nutrition_label"일 때, 입력은 JSON 문자열이라고 생각하면 돼:
+analyze_type이 "barcode_image"일 때, 입력은 JSON 문자열이라고 생각하면 돼:
 
 analyze_type: {analyze_type}
 
@@ -91,7 +91,17 @@ Nutrition Info:
 Ingredients:
 {ingredient_text}
 
-analyze_type이 "image"일 때는, 사용자 정보 + 이미지가 함께 주어져:
+analyze_type이 "nutrition_label" 일 때는 사용자 정보 + 영양 라벨 텍스트 + 이미지가 주어져:
+
+analyze_type: {analyze_type}
+
+User Profile:
+{user_profile}
+
+Nutrition Info:
+{nutrition_text}
+
+그리고 "image"일 때는, 사용자 정보 + 이미지가 함께 주어져:
 
 analyze_type: {analyze_type}
 
@@ -191,7 +201,7 @@ User Profile:
 
         content: list[dict] = [{"type": "text", "text": prompt}]
 
-        if analyze_type == "image" and image_data_url is not None:
+        if (analyze_type == "image" or analyze_type == "nutrition_label") and image_data_url is not None:
             content.append(
                 {
                     "type": "image_url",

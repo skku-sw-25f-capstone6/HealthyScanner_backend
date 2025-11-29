@@ -27,13 +27,15 @@ async def barcode_image(
 
 @router.post("/nutrition_label", response_model=ScanResultOut)
 async def nutrition_label(
-    nutrition_label: str = Body(..., embed=True),
+    nutrition_label: str = Form(...),
+    image: UploadFile | None = File(None),
     current_user = Depends(get_current_user),
     scan_flow: ScanFlowService = Depends(get_scan_flow_service),
 ):
     return await scan_flow.from_nutrition_text(
         user_id=current_user.id,
-        nutrition_label=nutrition_label
+        nutrition_label=nutrition_label,
+        image=image
     )
 
 
