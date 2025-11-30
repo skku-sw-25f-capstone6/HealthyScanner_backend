@@ -24,7 +24,7 @@ CREATE TABLE nutrition (
 
     CONSTRAINT uq_nutrition_product_label
         UNIQUE (product_id, label_version)
-);
+)
 ENGINE = InnoDB
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;

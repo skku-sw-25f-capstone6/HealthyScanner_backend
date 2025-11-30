@@ -22,7 +22,7 @@ CREATE TABLE product (
          OR barcode REGEXP '^[0-9]{13}$'
          OR barcode REGEXP '^[0-9]{14}$')
     )
-);
+)
 ENGINE = InnoDB
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;

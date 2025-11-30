@@ -5,7 +5,8 @@ from app.schemas.ai import AiScanResult
 import json
 from json import JSONDecodeError
 from pydantic import ValidationError
-from app.services.scan_flow_service import AnalyzeType
+
+AnalyzeType = Literal["barcode_image", "nutrition_label", "image"]
 
 class AiScanAnalysisService:
     def __init__(self, openai_client):

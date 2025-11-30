@@ -1,7 +1,7 @@
 # app/services/scan_history_service.py
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
@@ -12,7 +12,6 @@ from app.DAL.nutrition_DAL import NutritionDAL
 from app.DAL.product_DAL import ProductDAL
 from app.DAL.ingredient_DAL import IngredientDAL
 
-from app.services.scan_flow_service import AnalyzeType
 from app.services.product_service import ProductService
 from app.services.ai_scan_analysis_service import AiScanAnalysisService
 
@@ -26,6 +25,8 @@ from app.schemas.product import ProductOut
 from app.schemas.nutrition import NutritionOut
 from app.schemas.ingredient import IngredientOut
 import base64
+
+AnalyzeType = Literal["barcode_image", "nutrition_label", "image"]
 
 class ScanHistoryService:
     def __init__(

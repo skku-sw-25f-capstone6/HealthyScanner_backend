@@ -1,7 +1,12 @@
 # app/core/ai_client.py
-from openai import AsyncOpenAI
 from functools import lru_cache
+from openai import AsyncOpenAI
+
+from app.core.config import settings
+
 
 @lru_cache
-def get_openai_client():
-    return AsyncOpenAI(api_key="YOUR_OPENAI_KEY")
+def get_openai_client() -> AsyncOpenAI:
+    if not settings.OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY is not set in environment")
+    return AsyncOpenAI(api_key=settings.OPENAI_API_KEY)

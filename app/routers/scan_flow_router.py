@@ -41,7 +41,7 @@ async def nutrition_label(
 
 @router.post("/image", response_model=ScanResultOut)
 async def image(
-    image: UploadFile | None = File(None),
+    image: UploadFile = File(None),
     current_user = Depends(get_current_user),
     scan_flow: ScanFlowService = Depends(get_scan_flow_service),
 ):

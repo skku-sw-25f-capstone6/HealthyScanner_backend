@@ -22,7 +22,7 @@ from app.services.ai_scan_analysis_service import AiScanAnalysisService
 
 from app.core.database import get_db
 from app.core.ai_client import get_openai_client
-
+from app.core.config import settings
 
 
 def get_user_dal() -> UserDAL:
@@ -43,13 +43,10 @@ def get_product_dal() -> ProductDAL:
 def get_nutrition_dal() -> NutritionDAL:
     return NutritionDAL()
 
-def get_image_storage_service(
-        base_dir: Path, 
-        base_url: str = "/static"
-) -> ImageStorageService:
+def get_image_storage_service() -> ImageStorageService:
     return ImageStorageService(
-        base_dir=base_dir,
-        base_url=base_url
+        base_dir=Path(settings.IMAGE_BASE_DIR),
+        base_url=settings.IMAGE_BASE_URL
     )
 
 def get_nutrition_service(
