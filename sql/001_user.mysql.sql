@@ -13,7 +13,7 @@ CREATE TABLE user (
     access_token TEXT,                    -- 카카오 access_token
     refresh_token TEXT,                   -- 카카오 refresh_token
     token_type VARCHAR(50),               -- 보통 'bearer'
-    expires_in INT,                       useruser-- access_token 유효기간(초)
+    expires_in INT,                       -- access_token 유효기간(초)
     refresh_expires_in INT,               -- refresh_token 유효기간(초)
     
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
