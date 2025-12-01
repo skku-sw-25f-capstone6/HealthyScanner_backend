@@ -25,20 +25,49 @@ KAKAO_REDIRECT_URI_LOCAL = "http://127.0.0.1:8000/auth/kakao/callback"
 # ————————————————————————————————————
 # 📌 1) 카카오 로그인 URL 리다이렉트
 # ————————————————————————————————————
+from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models.user import User
+from utils.jwt_handler import create_jwt
+from utils.auth_dependency import get_current_user
+
+import requests
+import os
+from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
+router = APIRouter()
+
+# 🔥 카카오 REST API 설정
+KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
+KAKAO_REDIRECT_URI_IOS = os.getenv("KAKAO_REDIRECT_URI_IOS")
+KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
+KAKAO_REDIRECT_URI_LOCAL = "http://127.0.0.1:8000/auth/kakao/callback"
+
+
+# ————————————————————————————————————
+# 📌 1) 카카오 로그인 URL 리다이렉트
+# ————————————————————————————————————
 @router.get("/auth/kakao/login")
 def login(platform: str = Query("ios")):
+    # platform 정보는 redirect_uri 뒤가 아니라 state에 넣는다.
     if platform == "android":
-        redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
+        redirect_uri = KAKAO_REDIRECT_URI_ANDROID
     elif platform == "local":
-        redirect_uri = f"{KAKAO_REDIRECT_URI_LOCAL}?platform=local"
+        redirect_uri = KAKAO_REDIRECT_URI_LOCAL
     else:
-        redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
+        redirect_uri = KAKAO_REDIRECT_URI_IOS
 
     kakao_auth_url = (
         "https://kauth.kakao.com/oauth/authorize"
         f"?client_id={KAKAO_CLIENT_ID}"
         f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
+        f"&state={platform}"   # ← 플랫폼 정보는 여기로
     )
 
     return RedirectResponse(kakao_auth_url)
@@ -50,16 +79,16 @@ def login(platform: str = Query("ios")):
 @router.get("/auth/kakao/callback")
 def kakao_callback(
     code: str,
-    platform: str = Query("ios"),
+    state: str = Query("ios"),   # 플랫폼 정보는 state로 받음
     db: Session = Depends(get_db),
 ):
-    # 플랫폼별 리다이렉트 URI 매칭
-    if platform == "android":
-        redirect_uri = f"{KAKAO_REDIRECT_URI_ANDROID}?platform=android"
-    elif platform == "local":
-        redirect_uri = f"{KAKAO_REDIRECT_URI_LOCAL}?platform=local"
+    # 플랫폼별 redirect uri 설정
+    if state == "android":
+        redirect_uri = KAKAO_REDIRECT_URI_ANDROID
+    elif state == "local":
+        redirect_uri = KAKAO_REDIRECT_URI_LOCAL
     else:
-        redirect_uri = f"{KAKAO_REDIRECT_URI_IOS}?platform=ios"
+        redirect_uri = KAKAO_REDIRECT_URI_IOS
 
     # -------------------------
     # 🔥 step 1) access token 요청
@@ -101,7 +130,7 @@ def kakao_callback(
     user = db.query(User).filter(User.id == kakao_user_id).first()
 
     if not user:
-        # 🔥 최초 가입
+        # 신규 가입
         user = User(
             id=kakao_user_id,
             name=nickname,
@@ -118,12 +147,8 @@ def kakao_callback(
         db.add(user)
         db.commit()
         db.refresh(user)
-        print(f"🆕 신규 회원 생성: {kakao_user_id}")
-
     else:
-        # 🔄 기존 회원 업데이트
-        print(f"✔ 기존 회원 로그인: {kakao_user_id}")
-
+        # 기존 사용자 업데이트
         user.name = nickname
         user.profile_image_url = profile_image
         user.access_token = access_token
@@ -135,21 +160,18 @@ def kakao_callback(
         db.commit()
         db.refresh(user)
 
-    # ---------------------------------------------------------
-    # 🔥 step 5) JWT 발급
-    # ---------------------------------------------------------
+    # JWT 생성
     jwt_token = create_jwt(kakao_user_id)
 
-    # ---------------------------------------------------------
-    # 🟦 최종 JSON 응답 11/30 수정 사항 반영 - content type JSON 수정 반영 (Flutter 용)
-    # ---------------------------------------------------------
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": token_type,
         "expires_in": expires_in,
         "refresh_expires_in": refresh_expires_in,
+        "jwt": jwt_token,
     }
+
 
 
 # ————————————————————————————————————
