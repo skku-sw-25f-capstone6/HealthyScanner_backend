@@ -29,6 +29,5 @@ CREATE TABLE user_daily_score (
   CONSTRAINT fk_user_daily_score_user
     FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
 )
-ENGINE = InnoDB
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
