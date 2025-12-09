@@ -12,6 +12,7 @@ CREATE TABLE ingredient (
                                   ON UPDATE CURRENT_TIMESTAMP(6),
 
     FOREIGN KEY(product_id) REFERENCES product(id) ON DELETE CASCADE
-);
+)
+ENGINE = InnoDB
 DEFAULT CHARSET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;

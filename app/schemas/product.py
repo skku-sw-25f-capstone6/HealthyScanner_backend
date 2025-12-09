@@ -59,3 +59,12 @@ class ProductDetailOut(BaseModel):
     ingredients: Optional[List[IngredientOut]] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ProductSimpleOut(BaseModel):
+    name: str
+    category: str
+    image_url: str   # 실제론 image_url 이나 cdn_url일 수도 있음
+
+    # Product 모델에서 바로 읽어오고 싶으면 from_attributes 사용
+    model_config = ConfigDict(from_attributes=True)

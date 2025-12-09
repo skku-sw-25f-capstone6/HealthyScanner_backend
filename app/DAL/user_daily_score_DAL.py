@@ -123,6 +123,6 @@ class UserDailyScoreDAL:
         if not uds:
             return False
 
-        uds.deleted_at = datetime.now(timezone.utc)
+        uds.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
         return True

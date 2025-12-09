@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.DAL.ingredient_DAL import IngredientDAL
-from app.schemas.ingredient import IngredientCreate, IngredientUpdate, IngredientOut
+from app.schemas.ingredient import IngredientCreate, IngredientUpdate, IngredientOut, IngredientDetailOut, IngredientText
 
 router = APIRouter(
     prefix="/v1/ingredients",
@@ -29,16 +29,16 @@ def create_ingredient(
 
 @router.get(
     "/{ingredient_id}",
-    response_model=IngredientOut,
+    response_model=IngredientDetailOut,
 )
 def get_ingredient(
     ingredient_id: str,
     db: Session = Depends(get_db),
-):
+) -> IngredientDetailOut:
     ingredient = IngredientDAL.get(db, ingredient_id)
     if not ingredient:
         raise HTTPException(status_code=404, detail="Ingredient not found")
-    return ingredient
+    return IngredientDetailOut(ingredient=IngredientText(text=ingredient.raw_ingredient))
 
 
 @router.get(
