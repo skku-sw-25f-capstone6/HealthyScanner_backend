@@ -28,6 +28,8 @@ from app.schemas.scan_history import (
     FaceType,
     ScanHistoryUpdate,
     ScanHistoryNameCategoryOut,
+    ScanSummaryOut,
+    ScanHistoryListOut
 )
 from app.schemas.user import UserOut
 from app.schemas.product import ProductOut
@@ -247,6 +249,24 @@ class ScanHistoryService:
             updated_at=scan.updated_at
         )
 
+    async def get_scan_list_by_date(
+        self, user_id: str, date: datetime
+    ) -> ScanHistoryListOut:
+        scans = self.scan_history_dal.get_by_date(self.db, user_id, date)
+
+        scan_list = []
+        for s in scans:
+            scan_list.append(
+                ScanSummaryOut(
+                    name=s.display_name,
+                    category=s.display_category,
+                    riskLevel=s.risk_level,     # DB에 컬럼 있으면
+                    summary=s.ai_total_report,  # or summary 필드
+                    url=s.image_url,            # 이미지 저장한 컬럼명
+                )
+            )
+
+        return ScanHistoryListOut(scan=scan_list)
 
     def get_scan_detail(self, scan_id: str) -> ScanDetailOut:
         scan = self.scan_history_dal.get(self.db, scan_id)
