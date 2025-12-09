@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.DAL.product_DAL import ProductDAL
-from app.schemas.product import ProductCreate, ProductUpdate, ProductOut, ProductDetailOut
+from app.schemas.product import ProductCreate, ProductUpdate, ProductOut, ProductSimpleOut
 from app.services.product_service import ProductService
 
 router = APIRouter(
@@ -30,12 +30,12 @@ def create_product(
 
 @router.get(
     "/{product_id}",
-    response_model=ProductOut,
+    response_model=ProductSimpleOut,
 )
 def get_product(
     product_id: str,
     db: Session = Depends(get_db),
-):
+) -> ProductSimpleOut:
     product = ProductDAL.get(db, product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -82,26 +82,3 @@ def delete_product(
     if not ok:
         raise HTTPException(status_code=404, detail="Product not found")
     return
-
-
-@router.get(
-    "/{product_id}/detail",
-    response_model=ProductDetailOut,
-)
-def get_product_detail(
-    product_id: str,
-    with_nutrition: bool = Query(True),
-    with_ingredient: bool = Query(True),
-    db: Session = Depends(get_db),
-):
-    service = ProductService(db)
-    result = service.get_product_detail(
-        product_id=product_id,
-        with_nutrition=with_nutrition,
-        with_ingredient=with_ingredient,
-    )
-
-    if result is None:
-        raise HTTPException(status_code=404, detail="Product not found")
-
-    return result

@@ -9,3 +9,5 @@ from . import mypage_router
 from . import me_router
 from . import auth_router
 from . import auth_user_router
+from . import scan_flow_router
+from . import home_router

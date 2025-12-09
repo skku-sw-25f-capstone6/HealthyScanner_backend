@@ -8,6 +8,23 @@ from pydantic import ValidationError
 
 AnalyzeType = Literal["barcode_image", "nutrition_label", "image"]
 
+SCAN_RESULT_SCHEMA_HINT = """
+{
+    "decision": "avoid" | "caution" | "ok",
+    "ai_total_score": int,
+    "ai_allergy_report": "string or null",
+    "ai_condition_report": "string or null",
+    "ai_alter_report": "string or null",
+    "ai_vegan_report": "string or null",
+    "ai_total_report": "string or null",
+    "caution_factors": [
+      "key": "string (e.g. 'hypertension', 'heart_disease', 'kidney_disease', ...)",
+      "level": "red" | "yellow" | "green"
+    ] or null,
+    "ai_total_summary": "string"
+}
+"""
+
 class AiScanAnalysisService:
     def __init__(self, openai_client):
         self.client = openai_client
@@ -124,18 +141,7 @@ User Profile:
 
 반환 형식은 아래 JSON 형식만 사용해야 해 (필드 이름, 구조를 변경하면 안 됨):
 
-{
-  "decision": "avoid" | "caution" | "ok",
-  "ai_total_score": int,
-  "ai_allergy_report": "string or null",
-  "ai_condition_report": "string or null",
-  "ai_alter_report": "string or null",
-  "ai_vegan_report": "string or null",
-  "ai_total_report": "string or null",
-  "caution_factors": ["list", "of", "strings"] or null,
-  "ai_total_summary": "string"
-}
-
+{SCAN_RESULT_SCHEMA_HINT}
 
 추가 규칙:
 

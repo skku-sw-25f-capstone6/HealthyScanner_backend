@@ -7,6 +7,9 @@ from app.services.scan_history_service import ScanHistoryService
 from app.services.nutrition_service import NutritionService
 from app.services.ingredient_service import IngredientService
 from app.services.product_service import ProductService
+from app.services.user_daily_score_service import UserDailyScoreService
+
+from app.schemas.user_daily_score import MaxSeverity
 
 
 AnalyzeType = Literal["barcode_image", "nutrition_label", "image"]
@@ -25,12 +28,13 @@ class ScanFlowService:
         nutrition_service: NutritionService,
         ingredient_service: IngredientService,
         product_service : ProductService,
+        user_daily_score_service: UserDailyScoreService,
     ):
         self.scan_history_service = scan_history_service
         self.nutrition_service = nutrition_service
         self.ingredient_service = ingredient_service
         self.product_service = product_service
-
+        self.user_daily_score_service = user_daily_score_service
 
     async def from_barcode_and_image(
         self,
@@ -101,9 +105,30 @@ class ScanFlowService:
             nutrition_id = None
             ingredient_id = None
 
+        if scan.scanned_at is None:
+            raise RuntimeError("scan.scanned_at is None you idiot")
+        
+        if scan.decision is None:
+            raise RuntimeError("scan.decision is None you idiot")
+        
+
+        # 2) user_daily_score 갱신
+        #    (local_date / severity / decision_key는 나중에 너랑 같이 정의)
+        local_date = scan.scanned_at.date()     # 일단 UTC date, 나중에 로컬로 바꾸자
+        decision_key = scan.decision.value      # 예: "allow" / "caution" / "avoid"
+        severity: MaxSeverity | None = None     # decision → severity 맵핑 함수 하나 만들면 좋음
+
+        self.user_daily_score_service.update_on_scan(
+            user_id=scan.user_id,
+            local_date=local_date,
+            severity=severity,
+            decision_key=decision_key,
+        )
+
         return ScanResultOut(
             scan_id=scan.id,
             product_id=product_id,
             nutrition_id=nutrition_id,
             ingredient_id=ingredient_id,
         )
+    

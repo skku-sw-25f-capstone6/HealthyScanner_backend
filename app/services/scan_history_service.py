@@ -19,6 +19,15 @@ from app.schemas.scan_history import (
     ScanHistoryCreate,
     ScanHistoryOut,
     ScanDecision,
+    ScanDetailOut,
+    ScanReports,
+    ReportBlock,
+    AlternativeReport,
+    CautionFactor,
+    RiskLevel,
+    FaceType,
+    ScanHistoryUpdate,
+    ScanHistoryNameCategoryOut,
 )
 from app.schemas.user import UserOut
 from app.schemas.product import ProductOut
@@ -67,6 +76,8 @@ class ScanHistoryService:
         nutrition_dict: dict | None = None
         ingredient_list: list[dict] | None = None
         image_data_url: str | None = None
+        display_name = None
+        display_category = None
 
         # 여기서 이미지 저장이 될 수도 있음
         # product_id가 있는 경우에만 이미지 받는 거임 (수정해야 할 수도)
@@ -78,6 +89,11 @@ class ScanHistoryService:
                 await self.product_service.attach_image(self.db, product_id, image)
 
             product = self.product_dal.get(self.db, str(product_id))
+            
+            # db에 무조건 있다는 가정
+            # Unknown Product는 안 될 거임
+            tmp_display_name = product.name if product else "Unknown Product"
+            tmp_display_category = product.category if product else "Uncategorized"
 
             nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
             ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
@@ -99,6 +115,16 @@ class ScanHistoryService:
             product_dict = None            # 또는 {"name": None, ...} 같은 placeholder
             nutrition_dict = {"raw_label": nutrition_text} if nutrition_text else None
             ingredient_list = []
+
+            d = datetime.now(timezone.utc)
+            n = self.scan_history_dal.count_scans_date(
+                db=self.db,
+                user_id=user_id,
+                local_date=d.date(),
+            ) + 1
+
+            tmp_display_name = f"{d.month}월 {d.day}일 {n}번"
+            tmp_display_category = "Uncategorized"
 
             if image is not None:
                 # 이미지 파일 읽기
@@ -122,6 +148,16 @@ class ScanHistoryService:
             # content_type 사용해서 data URL 만들기
             mime = image.content_type or "image/jpeg"
             image_data_url = f"data:{mime};base64,{b64}"
+            
+            d = datetime.now(timezone.utc)
+            n = self.scan_history_dal.count_scans_date(
+                db=self.db,
+                user_id=user_id,
+                local_date=d.date(),
+            ) + 1
+
+            tmp_display_name = f"{d.month}월 {d.day}일 {n}번"
+            tmp_display_category = "Uncategorized"
 
         else:
             raise HTTPException(400, "Invalid analyze_type")
@@ -137,10 +173,12 @@ class ScanHistoryService:
             image_data_url=image_data_url,
         )
 
-
         summary: str = ai_result.ai_total_summary
         decision: ScanDecision = ScanDecision(ai_result.decision)
         ai_total_score: int = ai_result.ai_total_score
+        display_name = tmp_display_name
+        display_category = tmp_display_category
+        image_url = image_data_url
 
         conditions: List[str] = user_dict.get("conditions") or []  # 예: ["diabetes"]
         allergies: List[str] = user_dict.get("allergies") or []   # 예: ["peanut"]
@@ -152,19 +190,20 @@ class ScanHistoryService:
         ai_vegan_report: Optional[str] = ai_result.ai_vegan_report
         ai_total_report: Optional[str] = ai_result.ai_total_report
 
-        caution_factors_raw: Optional[List[str]] = ai_result.caution_factors
-        caution_factors: Optional[List[Dict[str, Any]]] = (
-            [{"factor": factor} for factor in caution_factors_raw]
-            if caution_factors_raw
-            else None
-        )
+        caution_factors_raw: Optional[List[Dict[str, str]]] = ai_result.caution_factors
+        caution_factors: Optional[List[Dict[str, str]]] = caution_factors_raw
 
-        scanned_at = datetime.now(timezone.utc)
 
+        now_aware = datetime.now(timezone.utc)
+        scanned_at = now_aware.replace(tzinfo=None)  # naive datetime 저장
+    
         data = ScanHistoryCreate(
             user_id=user_id,
-            product_id=product_id if product_id is not None else "NULL",
+            product_id=product_id,
             scanned_at=scanned_at,
+            display_name=display_name,
+            display_category=display_category,
+            image_url=image_url,
             decision=decision,
             summary=summary,
             ai_total_score=ai_total_score,
@@ -181,3 +220,115 @@ class ScanHistoryService:
 
         scan = self.scan_history_dal.create(self.db, data)
         return scan
+
+
+    async def update_name_category(
+        self, 
+        scan_id: str, 
+        display_name: str, 
+        display_category: str
+    ) -> ScanHistoryNameCategoryOut:
+        scan = self.scan_history_dal.get(self.db, scan_id)
+        if scan is None:
+            raise HTTPException(status_code=404, detail="Scan not found")
+        
+        update_in = ScanHistoryUpdate(
+            display_name=display_name,
+            display_category=display_category,
+        )
+
+        scan = self.scan_history_dal.update(self.db, scan_id, update_in)
+        if scan is None:
+            raise HTTPException(status_code=404, detail="Scan not found")
+
+        return ScanHistoryNameCategoryOut(
+            name=scan.display_name,
+            category=scan.display_category,
+            updated_at=scan.updated_at
+        )
+
+
+    def get_scan_detail(self, scan_id: str) -> ScanDetailOut:
+        scan = self.scan_history_dal.get(self.db, scan_id)
+        if scan is None:
+            raise HTTPException(status_code=404, detail="Scan not found")
+
+        # 1) decision -> risk_level
+        decision = (scan.decision or "ok").lower()
+        risk_level = {
+            "avoid": RiskLevel.red,
+            "caution": RiskLevel.yellow,
+            "ok": RiskLevel.green,
+        }.get(decision, RiskLevel.green)
+
+        def face_for_negative() -> FaceType:
+            if risk_level == RiskLevel.red:
+                return FaceType.NO
+            if risk_level == RiskLevel.yellow:
+                return FaceType.NOT_BAD
+            return FaceType.GOOD
+
+        # 2) 각 보고서 블록 만들기 (AI 컬럼 매핑)
+        allergies_block = None
+        if scan.ai_allergy_report:
+            allergies_block = ReportBlock(
+                brief_report="알레르기 관련 주의가 필요해요.",
+                face=face_for_negative(),
+                report=scan.ai_allergy_report,
+            )
+
+        condition_block = None
+        if scan.ai_condition_report:
+            condition_block = ReportBlock(
+                brief_report="기저질환 관련 설명입니다.",
+                face=face_for_negative(),
+                report=scan.ai_condition_report,
+            )
+
+        alternatives_list: List[AlternativeReport] = []
+        if scan.ai_alter_report:
+            alternatives_list.append(
+                AlternativeReport(
+                    brief_report="대체 식품 추천",
+                    face=FaceType.GOOD,
+                    report=scan.ai_alter_report,
+                )
+            )
+
+        vegan_block = None
+        if scan.ai_vegan_report:
+            vegan_block = ReportBlock(
+                brief_report="비건 관련 정보입니다.",
+                face=face_for_negative(),
+                report=scan.ai_vegan_report,
+            )
+
+        # 3) caution_factors(list[str]) -> list[CautionFactor]
+        caution_factors_list: List[CautionFactor] = []
+        if scan.caution_factors:
+            for cf in scan.caution_factors:   # cf = {"key": "...", "level": "red"}
+                factor = cf["key"]
+                level = cf["level"]
+
+                eval_map = {
+                    "red": "NO",
+                    "yellow": "CAUTION",
+                    "green": "OK",
+                }
+                eval_code = eval_map.get(level, "CAUTION")
+
+                caution_factors_list.append(
+                    CautionFactor(factor=factor, evaluation=eval_code)
+                )
+
+        return ScanDetailOut(
+            summary=scan.summary or "",
+            risk_level=risk_level,
+            reports=ScanReports(
+                allergies=allergies_block,
+                condition=condition_block,
+                alternatives=alternatives_list,
+                vegan=vegan_block,
+            ),
+            caution_factors=caution_factors_list,
+        )

@@ -9,5 +9,5 @@ class AiScanResult(BaseModel):
     ai_alter_report: Optional[str]
     ai_vegan_report: Optional[str]
     ai_total_report: Optional[str]
-    caution_factors: Optional[List[str]]
+    caution_factors: Optional[List[Dict[str, str]]]
     ai_total_summary: str

@@ -12,6 +12,7 @@ from app.routers import (
     me_router,
     auth_router,
     auth_user_router,
+    home_router,
 )
 
 from app.core.database import Base, engine
@@ -31,3 +32,4 @@ app.include_router(me_router.router)
 app.include_router(auth_router.router)
 app.include_router(auth_user_router.router)
 app.include_router(scan_flow_router.router)
+app.include_router(home_router.router)

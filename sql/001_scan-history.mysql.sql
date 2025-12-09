@@ -1,7 +1,10 @@
 CREATE TABLE scan_history (
     id CHAR(36) PRIMARY KEY,                  -- 스캔 기록 UUID
     user_id CHAR(36) NOT NULL,
-    product_id CHAR(36) NOT NULL,
+    product_id CHAR(36) NULL,
+    CONSTRAINT scan_history_ibfk_2
+        FOREIGN KEY (product_id) REFERENCES product(id)
+        ON DELETE CASCADE
 
     scanned_at DATETIME(6) NOT NULL,          -- 스캔 시각
 

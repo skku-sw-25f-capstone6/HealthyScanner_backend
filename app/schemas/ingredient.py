@@ -32,3 +32,10 @@ class IngredientOut(IngredientBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class IngredientText(BaseModel):
+    text: str
+
+
+class IngredientDetailOut(BaseModel):
+    ingredient: IngredientText

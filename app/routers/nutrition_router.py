@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.DAL.nutrition_DAL import NutritionDAL
-from app.schemas.nutrition import NutritionCreate, NutritionUpdate, NutritionOut
+from app.schemas.nutrition import NutritionCreate, NutritionUpdate, NutritionOut, NutritionDetailOut
 
 router = APIRouter(
     prefix="/v1/nutrition",
@@ -29,7 +29,7 @@ def create_nutrition(
 
 @router.get(
     "/{nutrition_id}",
-    response_model=NutritionOut,
+    response_model=NutritionDetailOut,
 )
 def get_nutrition(
     nutrition_id: str,
@@ -38,7 +38,7 @@ def get_nutrition(
     nutrition = NutritionDAL.get(db, nutrition_id)
     if not nutrition:
         raise HTTPException(status_code=404, detail="Nutrition not found")
-    return nutrition
+    return NutritionDetailOut(nutrition=nutrition)
 
 
 @router.get(

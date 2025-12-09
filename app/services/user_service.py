@@ -5,8 +5,14 @@ from fastapi import HTTPException
 
 from app.DAL.user_DAL import UserDAL
 from app.DAL.user_daily_score_DAL import UserDailyScoreDAL
-from app.schemas.user import MyPageOut
+from app.schemas.user import (
+    MyPageOut,
+    MyPageHabitOut,
+    MyPageAllergiesOut,
+    MyPageConditionOut
+)
 
+from typing import List
 
 class UserService:
     def __init__(
@@ -42,3 +48,38 @@ class UserService:
             scan_count=scan_count,
             profile_image_url=str(user.profile_image_url),
         )
+    
+    def update_habits(self, user_id: str, habit: str) -> MyPageHabitOut:
+        user = self.user_dal.get(db=self.db, user_id=user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user.habits = [habit]
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        return MyPageHabitOut(habit=habit, updated_at=user.updated_at)
+
+    def update_conditions(self, user_id: str, conditions: List[str]) -> MyPageConditionOut:
+        user = self.user_dal.get(db=self.db, user_id=user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user.conditions = conditions
+        self.db.commit()
+        self.db.refresh(user)
+
+        return MyPageConditionOut(conditions=conditions, updated_at=user.updated_at)
+    
+    def update_allergies(self, user_id: str, allergies: List[str]) -> MyPageAllergiesOut:
+        user = self.user_dal.get(db=self.db, user_id=user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user.allergies = allergies
+
+        self.db.commit()
+        self.db.refresh(user)
+
+        return MyPageAllergiesOut(allergies=allergies, updated_at=user.updated_at)
