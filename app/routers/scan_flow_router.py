@@ -3,7 +3,7 @@ from fastapi import APIRouter, Form, File, UploadFile, Depends, Body
 from app.schemas.scan_flow import ScanResultOut
 from app.services.scan_flow_service import ScanFlowService
 from app.dependencies import get_scan_flow_service
-from app.core.auth import get_current_user
+from utils.auth_dependency import get_current_user
 
 router = APIRouter(
     prefix="/v1/scan-history",
