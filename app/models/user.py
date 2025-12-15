@@ -18,11 +18,17 @@ class User(Base):
     conditions: Mapped[Optional[list[str]]] = mapped_column(MySQLJSON, nullable=True)
     allergies: Mapped[Optional[list[str]]] = mapped_column(MySQLJSON, nullable=True)
 
-    access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    refresh_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    token_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    expires_in: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    refresh_expires_in: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    kakao_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    kakao_refresh_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    kakao_token_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    kakao_expires_in: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    kakao_refresh_expires_in: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    app_refresh_token: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True, index=True
+    )
+
+
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), nullable=False, server_default=func.now()

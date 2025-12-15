@@ -10,7 +10,7 @@ from app.dependencies import (
     get_product_dal,
 )
 
-from utils.auth_dependency import get_current_user
+from app.core.auth import get_current_user
 
 from app.services.home_service import HomeService
 from app.services.user_daily_score_service import UserDailyScoreService

@@ -1,5 +1,10 @@
 # app/routers/auth_user_router.py
 
+##################################################
+# 폐기. 안 쓰임.
+##################################################
+
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
