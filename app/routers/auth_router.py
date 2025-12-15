@@ -1,60 +1,40 @@
-from fastapi import APIRouter, Depends, Query, HTTPException
+  GNU nano 7.2                                                                                                              auth_router.py
+from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.user import User
-from utils.jwt_handler import create_jwt
-from utils.auth_dependency import get_current_user
+from app.core.auth import create_access_token, get_current_user, create_app_refresh_token
 
 import requests
 import os
 from datetime import datetime
 from dotenv import load_dotenv
 
+from fastapi.responses import JSONResponse
+
+
+
+from pydantic import BaseModel
+
 load_dotenv()
 router = APIRouter()
 
-# 🔥 카카오 REST API 설정
+# ---------------------------------------------------------
+# 🔥 Kakao OAuth Config
+# ---------------------------------------------------------
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
 KAKAO_REDIRECT_URI_IOS = os.getenv("KAKAO_REDIRECT_URI_IOS")
 KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
 KAKAO_REDIRECT_URI_LOCAL = "http://127.0.0.1:8000/auth/kakao/callback"
 
 
-# ————————————————————————————————————
-# 📌 1) 카카오 로그인 URL 리다이렉트
-# ————————————————————————————————————
-from fastapi import APIRouter, Depends, Query, HTTPException
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
-
-from app.core.database import get_db
-from app.models.user import User
-from utils.jwt_handler import create_jwt
-from utils.auth_dependency import get_current_user
-
-import requests
-import os
-from datetime import datetime
-from dotenv import load_dotenv
-
-load_dotenv()
-router = APIRouter()
-
-# 🔥 카카오 REST API 설정
-KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
-KAKAO_REDIRECT_URI_IOS = os.getenv("KAKAO_REDIRECT_URI_IOS")
-KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
-KAKAO_REDIRECT_URI_LOCAL = "http://127.0.0.1:8000/auth/kakao/callback"
-
-
-# ————————————————————————————————————
-# 📌 1) 카카오 로그인 URL 리다이렉트
-# ————————————————————————————————————
+# ---------------------------------------------------------
+# 1️⃣ Kakao Login Redirect
+# ---------------------------------------------------------
 @router.get("/auth/kakao/login")
-def login(platform: str = Query("ios")):
-    # platform 정보는 redirect_uri 뒤가 아니라 state에 넣는다.
+def kakao_login(platform: str = Query("ios")):
     if platform == "android":
         redirect_uri = KAKAO_REDIRECT_URI_ANDROID
     elif platform == "local":
@@ -67,22 +47,22 @@ def login(platform: str = Query("ios")):
         f"?client_id={KAKAO_CLIENT_ID}"
         f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
-        f"&state={platform}"   # ← 플랫폼 정보는 여기로
+        f"&state={platform}"
     )
 
     return RedirectResponse(kakao_auth_url)
 
 
-# ————————————————————————————————————
-# 📌 2) 카카오 콜백 처리 + 자동 회원가입
-# ————————————————————————————————————
+# ---------------------------------------------------------
+# 2️⃣ Kakao Callback + App Token Issuance
+# ---------------------------------------------------------
 @router.get("/auth/kakao/callback")
 def kakao_callback(
     code: str,
-    state: str = Query("ios"),   # 플랫폼 정보는 state로 받음
+    state: str = Query("ios"),
     db: Session = Depends(get_db),
 ):
-    # 플랫폼별 redirect uri 설정
+    # 플랫폼별 redirect_uri
     if state == "android":
         redirect_uri = KAKAO_REDIRECT_URI_ANDROID
     elif state == "local":
@@ -90,208 +70,192 @@ def kakao_callback(
     else:
         redirect_uri = KAKAO_REDIRECT_URI_IOS
 
-    # -------------------------
-    # 🔥 step 1) access token 요청
-    # -------------------------
-    token_url = "https://kauth.kakao.com/oauth/token"
-    data = {
-        "grant_type": "authorization_code",
-        "client_id": KAKAO_CLIENT_ID,
-        "redirect_uri": redirect_uri,
-        "code": code,
-    }
+    # -------------------------------------------------
+    # Step 1) Kakao Access Token 요청
+    # -------------------------------------------------
+    token_res = requests.post(
+        "https://kauth.kakao.com/oauth/token",
+        data={
+            "grant_type": "authorization_code",
+            "client_id": KAKAO_CLIENT_ID,
+            "redirect_uri": redirect_uri,
+            "code": code,
+        },
+    ).json()
 
-    token_res = requests.post(token_url, data=data).json()
-    access_token = token_res.get("access_token")
+    kakao_access_token = token_res.get("access_token")
+    if not kakao_access_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to get Kakao access token",
+        )
 
-    if not access_token:
-        return {"error": "token_failed"}
-
-    refresh_token = token_res.get("refresh_token")
+    kakao_refresh_token = token_res.get("refresh_token")
     token_type = token_res.get("token_type")
     expires_in = token_res.get("expires_in")
     refresh_expires_in = token_res.get("refresh_token_expires_in")
 
-    # -------------------------
-    # 🔥 step 2) 사용자 정보 요청
-    # -------------------------
+    # -------------------------------------------------
+    # Step 2) Kakao User Info
+    # -------------------------------------------------
     user_info = requests.get(
         "https://kapi.kakao.com/v2/user/me",
-        headers={"Authorization": f"Bearer {access_token}"}
+        headers={"Authorization": f"Bearer {kakao_access_token}"},
     ).json()
 
     kakao_user_id = str(user_info.get("id"))
-    nickname = user_info.get("kakao_account", {}).get("profile", {}).get("nickname")
-    profile_image = user_info.get("kakao_account", {}).get("profile", {}).get("profile_image_url")
-
-    # -------------------------
-    # 🔥 step 3) DB 사용자 조회
-    # -------------------------
+    nickname = (
+        user_info.get("kakao_account", {})
+        .get("profile", {})
+        .get("nickname")
+    )
+    profile_image = (
+        user_info.get("kakao_account", {})
+        .get("profile", {})
+        .get("profile_image_url")
+    )
+ # -------------------------------------------------
+    # Step 3) User Upsert
+    # -------------------------------------------------
     user = db.query(User).filter(User.id == kakao_user_id).first()
 
     if not user:
-        # 신규 가입
         user = User(
             id=kakao_user_id,
             name=nickname,
             profile_image_url=profile_image,
-
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type=token_type,
-            expires_in=expires_in,
-            refresh_expires_in=refresh_expires_in,
-
             created_at=datetime.utcnow(),
         )
         db.add(user)
-        db.commit()
-        db.refresh(user)
-    else:
-        # 기존 사용자 업데이트
-        user.name = nickname
-        user.profile_image_url = profile_image
-        user.access_token = access_token
-        user.refresh_token = refresh_token
-        user.token_type = token_type
-        user.expires_in = expires_in
-        user.refresh_expires_in = refresh_expires_in
 
-        db.commit()
-        db.refresh(user)
+    # Kakao token 저장
+    user.access_token = kakao_access_token
+    user.refresh_token = kakao_refresh_token
+    user.token_type = token_type
+    user.expires_in = expires_in
+    user.refresh_expires_in = refresh_expires_in
 
-    # JWT 생성
-    jwt_token = create_jwt(kakao_user_id)
+    # -------------------------------------------------
+    # 🔐 App Token Issuance
+    # -------------------------------------------------
+    app_access_token = create_access_token(kakao_user_id)
+    app_refresh_token = create_app_refresh_token()
 
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": token_type,
-        "expires_in": expires_in,
-        "refresh_expires_in": refresh_expires_in,
-        "jwt": jwt_token,
-    }
+    user.app_refresh_token = app_refresh_token
+
+    db.commit()
+    db.refresh(user)
+
+    # -------------------------------------------------
+    # ✅ Redirect + Cookie (여기가 핵심)
+    # -------------------------------------------------
+    response = JSONResponse({
+      "app_access_token": app_access_token,
+      "app_refresh_token": app_refresh_token,
+
+      # (필요하면 그대로 유지)
+      "kakao_access_token": kakao_access_token,
+      "kakao_refresh_token": kakao_refresh_token,
+      "token_type": token_type,
+      "expires_in": expires_in,
+      "refresh_expires_in": refresh_expires_in,
+
+      "user_id": kakao_user_id,
+    })
 
 
-
-# ————————————————————————————————————
-# 📌 3) 로그인 후 사용자 정보 조회
-# ————————————————————————————————————
+    return response
+# ---------------------------------------------------------
+# 3️⃣ Get Current User
+# ---------------------------------------------------------
 @router.get("/auth/me")
 def get_me(user: User = Depends(get_current_user)):
     return {
         "id": user.id,
         "name": user.name,
         "profile_image_url": user.profile_image_url,
-        "access_token": user.access_token,
-        "refresh_token": user.refresh_token,
-        "token_type": user.token_type,
-        "expires_in": user.expires_in,
-        "refresh_expires_in": user.refresh_expires_in,
     }
 
 
-# ————————————————————————————————————
-# 📌 4~8) 나머지 기능은 그대로 유지
-# ————————————————————————————————————
-
-def is_access_token_valid(access_token: str) -> bool:
-    url = "https://kapi.kakao.com/v1/user/access_token_info"
-    headers = {"Authorization": f"Bearer {access_token}"}
-    response = requests.get(url, headers=headers)
-    return response.status_code == 200
-
-
-def refresh_kakao_access_token(refresh_token: str):
-    url = "https://kauth.kakao.com/oauth/token"
-    data = {
-        "grant_type": "refresh_token",
-        "client_id": KAKAO_CLIENT_ID,
-        "refresh_token": refresh_token,
-    }
-
-    res = requests.post(url, data=data)
-
-    if res.status_code != 200:
-        return None
-
-    return res.json()
-
-
-def ensure_valid_kakao_access_token(user: User, db: Session):
-    if is_access_token_valid(user.access_token):
-        return user.access_token
-
-    print("⛔ Access Token 만료됨 → Refresh Token으로 재발급 시도")
-
-    refreshed = refresh_kakao_access_token(user.refresh_token)
-
-    if not refreshed or "access_token" not in refreshed:
-        print("❌ Refresh Token도 만료됨 → 재로그인 필요")
-        return None
-
-    user.access_token = refreshed["access_token"]
-    user.expires_in = refreshed.get("expires_in")
-
-    if refreshed.get("refresh_token"):
-        user.refresh_token = refreshed["refresh_token"]
-        user.refresh_expires_in = refreshed.get("refresh_token_expires_in")
-
-    db.commit()
-    db.refresh(user)
-
-    print("🔄 Access Token 자동 갱신 완료!")
-    return user.access_token
-
-
+# ---------------------------------------------------------
+# 4️⃣ Logout (Invalidate Refresh Token)
+# ---------------------------------------------------------
 @router.post("/auth/logout")
 def logout(
     user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    user.refresh_token = None
+    user.app_refresh_token = None
+    # (선택) Kakao token 정리
     user.access_token = None
+    user.refresh_token = None
+    user.token_type = None
     user.expires_in = None
     user.refresh_expires_in = None
-    user.token_type = None
-
     db.commit()
-    db.refresh(user)
 
     return {"message": "logout success"}
 
 
+# ---------------------------------------------------------
+# 5️⃣ Unlink Kakao Account
+# ---------------------------------------------------------
 @router.delete("/auth/unlink")
 def unlink_account(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    kakao_unlink_url = "https://kapi.kakao.com/v1/user/unlink"
-    headers = {
-        "Authorization": f"Bearer {user.access_token}"
-    }
-
-    kakao_res = requests.post(kakao_unlink_url, headers=headers)
+    kakao_res = requests.post(
+        "https://kapi.kakao.com/v1/user/unlink",
+        headers={"Authorization": f"Bearer {user.access_token}"},
+    )
 
     if kakao_res.status_code != 200:
-        print("❌ 카카오 unlink 실패:", kakao_res.text)
         raise HTTPException(
-            status_code=400,
-            detail="Failed to unlink Kakao account"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to unlink Kakao account",
         )
-
-    print(f"🔗 카카오 unlink 성공: {user.id}")
 
     user.access_token = None
     user.refresh_token = None
-    user.token_type = None
-    user.expires_in = None
-    user.refresh_expires_in = None
+    user.app_refresh_token = None
     user.deleted_at = datetime.utcnow()
 
     db.commit()
+    return {"message": "account unlinked"}
+# ---------------------------------------------------------
+# 📌 Refresh Token Request Schema
+# ---------------------------------------------------------
+class RefreshTokenRequest(BaseModel):
+    app_refresh_token: str
+
+
+# ---------------------------------------------------------
+# 6️⃣ Refresh Access Token
+# ---------------------------------------------------------
+@router.post("/auth/refresh")
+def refresh_access_token(
+    body: RefreshTokenRequest,
+    db: Session = Depends(get_db),
+):
+    refresh_token = body.app_refresh_token
+
+    # 🔍 Refresh Token으로 사용자 조회
+    user = (
+        db.query(User)
+        .filter(User.app_refresh_token == refresh_token)
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token",
+        )
+
+    # 🔐 새 Access Token 발급
+    new_access_token = create_access_token(user.id)
 
     return {
-        "status": "success",
-        "message": "Account unlinked and deleted"
+        "app_access_token": new_access_token
     }
