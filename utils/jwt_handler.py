@@ -2,7 +2,9 @@ import jwt
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
-
+####################################################
+# 폐기. 안 쓰임
+#####################################################
 load_dotenv()
 
 # ⚠️ 반드시 .env에서 불러오기

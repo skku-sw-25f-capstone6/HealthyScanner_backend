@@ -1,6 +1,6 @@
 # app/services/scan_history_service.py
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from typing import Any, Dict, List, Optional, Literal
 
 from fastapi import UploadFile, HTTPException
@@ -14,6 +14,7 @@ from app.DAL.ingredient_DAL import IngredientDAL
 
 from app.services.product_service import ProductService
 from app.services.ai_scan_analysis_service import AiScanAnalysisService
+from app.services.image_storage_service import ImageStorageService
 
 from app.schemas.scan_history import (
     ScanHistoryCreate,
@@ -50,6 +51,7 @@ class ScanHistoryService:
         scan_history_dal: ScanHistoryDAL,
         product_service: ProductService,
         ai_service: AiScanAnalysisService,
+        image_storage: ImageStorageService,
     ):
         self.db = db
         self.user_dal = user_dal
@@ -59,6 +61,7 @@ class ScanHistoryService:
         self.scan_history_dal = scan_history_dal
         self.product_service = product_service
         self.ai_service = ai_service
+        self.image_storage = image_storage
 
     async def analyze_and_save_scan(
         self,
@@ -78,8 +81,10 @@ class ScanHistoryService:
         nutrition_dict: dict | None = None
         ingredient_list: list[dict] | None = None
         image_data_url: str | None = None
+        saved_image_url: str | None = None
         display_name = None
         display_category = None
+        
 
         # 여기서 이미지 저장이 될 수도 있음
         # product_id가 있는 경우에만 이미지 받는 거임 (수정해야 할 수도)
@@ -96,6 +101,7 @@ class ScanHistoryService:
             # Unknown Product는 안 될 거임
             tmp_display_name = product.name if product else "Unknown Product"
             tmp_display_category = product.category if product else "Uncategorized"
+            saved_image_url = getattr(product, "image_url", None)
 
             nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
             ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
@@ -129,12 +135,11 @@ class ScanHistoryService:
             tmp_display_category = "Uncategorized"
 
             if image is not None:
-                # 이미지 파일 읽기
                 image_bytes = await image.read()
+                saved_image_url = await self.image_storage.save_scan_image_bytes(image.content_type, image_bytes)
 
+                # AI용 data URL은 필요하면 따로 만들기
                 b64 = base64.b64encode(image_bytes).decode("ascii")
-                
-                # content_type 사용해서 data URL 만들기
                 mime = image.content_type or "image/jpeg"
                 image_data_url = f"data:{mime};base64,{b64}"
 
@@ -142,12 +147,11 @@ class ScanHistoryService:
             if image is None:
                 raise HTTPException(400, "Image is required for analyze_type 'image'")
             
-            # 이미지 파일 읽기
             image_bytes = await image.read()
+            saved_image_url = await self.image_storage.save_scan_image_bytes(image.content_type, image_bytes)
 
+            # AI용 data URL은 필요하면 따로 만들기
             b64 = base64.b64encode(image_bytes).decode("ascii")
-            
-            # content_type 사용해서 data URL 만들기
             mime = image.content_type or "image/jpeg"
             image_data_url = f"data:{mime};base64,{b64}"
             
@@ -164,7 +168,6 @@ class ScanHistoryService:
         else:
             raise HTTPException(400, "Invalid analyze_type")
 
-
         # 여기서 분석 로직이 들어가야 함
         ai_result = await self.ai_service.analyze(
             user_profile=user_dict,
@@ -180,7 +183,7 @@ class ScanHistoryService:
         ai_total_score: int = ai_result.ai_total_score
         display_name = tmp_display_name
         display_category = tmp_display_category
-        image_url = image_data_url
+        image_url = saved_image_url
 
         conditions: List[str] = user_dict.get("conditions") or []  # 예: ["diabetes"]
         allergies: List[str] = user_dict.get("allergies") or []   # 예: ["peanut"]
@@ -256,11 +259,18 @@ class ScanHistoryService:
 
         scan_list = []
         for s in scans:
+            decision = (s.decision or "ok").lower()
+            risk_level = {
+                "avoid": RiskLevel.red,
+                "caution": RiskLevel.yellow,
+                "ok": RiskLevel.green,
+            }.get(decision, RiskLevel.green)
+
             scan_list.append(
                 ScanSummaryOut(
                     name=s.display_name,
                     category=s.display_category,
-                    riskLevel=s.risk_level,     # DB에 컬럼 있으면
+                    riskLevel=risk_level,     # DB에 컬럼 있으면
                     summary=s.ai_total_report,  # or summary 필드
                     url=s.image_url,            # 이미지 저장한 컬럼명
                 )

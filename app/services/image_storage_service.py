@@ -22,3 +22,15 @@ class ImageStorageService:
 
         # DB에 저장할 URL (FastAPI에서 /static 으로 서빙한다고 가정)
         return f"{self.base_url}/products/{filename}"
+    
+    async def save_scan_image_bytes(self, content_type: str | None, content: bytes) -> str:
+        ext = mimetypes.guess_extension(content_type or "") or ".jpg"
+        filename = f"scan_{uuid4().hex}{ext}"
+
+        dest_dir = self.base_dir / "scans"
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        full_path = dest_dir / filename
+        full_path.write_bytes(content)
+
+        return f"{self.base_url}/scans/{filename}"

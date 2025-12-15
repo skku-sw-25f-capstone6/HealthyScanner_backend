@@ -1,6 +1,6 @@
 # app/routers/scan_history_router.py
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.DAL.scan_history_DAL import ScanHistoryDAL
 from app.models.user import User
-from utils.auth_dependency import get_current_user
+from app.core.auth import get_current_user
 
 from app.services.scan_history_service import ScanHistoryService
 from app.services.scan_get_full_service import ScanGetFullService

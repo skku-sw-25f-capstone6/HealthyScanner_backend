@@ -106,7 +106,8 @@ def get_scan_history_service(
     ingredient_dal: IngredientDAL = Depends(get_ingredient_dal),
     scan_history_dal: ScanHistoryDAL = Depends(get_scan_history_dal),
     product_service: ProductService = Depends(get_product_service),
-    ai_service: AiScanAnalysisService = Depends(get_ai_scan_analysis_service)
+    ai_service: AiScanAnalysisService = Depends(get_ai_scan_analysis_service),
+    image_storage: ImageStorageService = Depends(get_image_storage_service),
 ) -> ScanHistoryService:
     return ScanHistoryService(
         db = db,
@@ -116,7 +117,8 @@ def get_scan_history_service(
         ingredient_dal = ingredient_dal, 
         scan_history_dal = scan_history_dal,
         product_service = product_service,
-        ai_service = ai_service
+        ai_service = ai_service,
+        image_storage = image_storage
     )
 
 def get_scan_get_full_service(
