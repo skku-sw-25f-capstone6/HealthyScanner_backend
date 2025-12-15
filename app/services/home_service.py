@@ -74,7 +74,7 @@ class HomeService:
             product = None
             if product_id is not None:
                 product = self.product_dal.get(self.db, product_id)
-
+            # 이 부분의 product_id가 None일 경우에 대해 scan_history 테이블에서 알잘딱하게 가져오는 게 필요함
             scan_items.append(
                 {
                     "name": getattr(product, "name", None),

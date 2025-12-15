@@ -6,14 +6,11 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.core.database import get_db
-from utils.auth_dependency import get_current_user
+from app.core.auth import get_current_user
 from app.DAL.user_DAL import UserDAL
 from app.schemas.user import (
     UserCreate, UserUpdate, UserOut
 )
-
-# 🔥 카카오 토큰 자동 갱신 함수 import
-from app.routers.auth_router import ensure_valid_kakao_access_token
 
 router = APIRouter(
     prefix="/v1/users",
@@ -105,7 +102,7 @@ def delete_user(
 
 
 # -------------------------------------------------------------
-# 🟧 현재 로그인된 사용자 정보 조회 (+ 카카오 Access Token 자동 갱신)
+# 🟧 현재 로그인된 사용자 정보 조회 (JWT 기반)
 # -------------------------------------------------------------
 @router.get(
     "/me",
@@ -113,50 +110,28 @@ def delete_user(
 )
 def get_me(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
 ):
     """
-    - JWT로 현재 로그인 사용자 확인
-    - 카카오 access_token 유효성 검사
-    - 만료 시 refresh_token으로 자동 재발급
-    - 최신 사용자 정보 반환
+    - 우리 앱 JWT 기반 인증
+    - 카카오 토큰과는 무관
     """
-
-    valid_access_token = ensure_valid_kakao_access_token(current_user, db)
-
-    if not valid_access_token:
-        raise HTTPException(
-            status_code=401,
-            detail="카카오 토큰이 만료되었습니다. 다시 로그인 해주세요.",
-        )
-
     return current_user
 
 
 # =====================================================================
-# 🟪 신규 기능: 온보딩 프로필 저장 API
+# 🟪 온보딩 프로필 저장 API
 #       POST /v1/users/profile
 # =====================================================================
-
 @router.post(
     "/profile",
     response_model=UserOut,
     status_code=status.HTTP_200_OK,
 )
 def update_profile(
-    profile: UserUpdate,  # ⬅ UserProfileUpdate → UserUpdate 로 변경
+    profile: UserUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """
-    사용자 온보딩 정보(habits, conditions, allergies) 저장 API
-
-    - JWT 인증된 사용자만 접근 가능
-    - 이미 저장된 값과 동일하면 409 Conflict
-    - 정상 저장 시 업데이트된 user 정보 반환
-    """
-
-    # ✔ Conflict 체크
     same_data = (
         current_user.habits == profile.habits and
         current_user.conditions == profile.conditions and
@@ -169,7 +144,6 @@ def update_profile(
             detail="이미 동일한 내용의 프로필이 존재합니다."
         )
 
-    # ✔ 업데이트
     current_user.habits = profile.habits
     current_user.conditions = profile.conditions
     current_user.allergies = profile.allergies
