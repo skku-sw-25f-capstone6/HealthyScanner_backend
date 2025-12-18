@@ -23,3 +23,7 @@ venv/
 Thumbs.db
 
 *.pem
+
+#static
+.static/
+static/
