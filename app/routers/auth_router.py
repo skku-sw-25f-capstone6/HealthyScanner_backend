@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.user import User
 from app.core.auth import create_access_token, get_current_user, create_app_refresh_token
+from app.core.auth import create_access_token, get_current_user, create_app_refresh_token
 
 import requests
 import os
@@ -23,12 +24,18 @@ router = APIRouter()
 # ---------------------------------------------------------
 # 🔥 Kakao OAuth Config
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 🔥 Kakao OAuth Config
+# ---------------------------------------------------------
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
 KAKAO_REDIRECT_URI_IOS = os.getenv("KAKAO_REDIRECT_URI_IOS")
 KAKAO_REDIRECT_URI_ANDROID = os.getenv("KAKAO_REDIRECT_URI_ANDROID")
 KAKAO_REDIRECT_URI_LOCAL = "http://127.0.0.1:8000/auth/kakao/callback"
 
 
+# ---------------------------------------------------------
+# 1️⃣ Kakao Login Redirect
+# ---------------------------------------------------------
 # ---------------------------------------------------------
 # 1️⃣ Kakao Login Redirect
 # ---------------------------------------------------------
@@ -52,6 +59,9 @@ def kakao_login(platform: str = Query("ios")):
     return RedirectResponse(kakao_auth_url)
 
 
+# ---------------------------------------------------------
+# 2️⃣ Kakao Callback + App Token Issuance
+# ---------------------------------------------------------
 # ---------------------------------------------------------
 # 2️⃣ Kakao Callback + App Token Issuance
 # ---------------------------------------------------------
@@ -90,6 +100,7 @@ def kakao_callback(
         )
 
     kakao_refresh_token = token_res.get("refresh_token")
+    kakao_refresh_token = token_res.get("refresh_token")
     token_type = token_res.get("token_type")
     expires_in = token_res.get("expires_in")
     refresh_expires_in = token_res.get("refresh_token_expires_in")
@@ -97,8 +108,12 @@ def kakao_callback(
     # -------------------------------------------------
     # Step 2) Kakao User Info
     # -------------------------------------------------
+    # -------------------------------------------------
+    # Step 2) Kakao User Info
+    # -------------------------------------------------
     user_info = requests.get(
         "https://kapi.kakao.com/v2/user/me",
+        headers={"Authorization": f"Bearer {kakao_access_token}"},
         headers={"Authorization": f"Bearer {kakao_access_token}"},
     ).json()
 
@@ -113,8 +128,7 @@ def kakao_callback(
         .get("profile", {})
         .get("profile_image_url")
     )
-
-    # -------------------------------------------------
+ # -------------------------------------------------
     # Step 3) User Upsert
     # -------------------------------------------------
     user = db.query(User).filter(User.id == kakao_user_id).first()
@@ -143,6 +157,23 @@ def kakao_callback(
 
     user.app_refresh_token = app_refresh_token
 
+    # Kakao token 저장
+    user.access_token = kakao_access_token
+    user.refresh_token = kakao_refresh_token
+    user.token_type = token_type
+    user.expires_in = expires_in
+    user.refresh_expires_in = refresh_expires_in
+
+    # -------------------------------------------------
+    # 🔐 App Token Issuance
+    # -------------------------------------------------
+    app_access_token = create_access_token(kakao_user_id)
+    app_refresh_token = create_app_refresh_token()
+
+    user.app_refresh_token = app_refresh_token
+
+    db.commit()
+    db.refresh(user)
     db.commit()
     db.refresh(user)
 
@@ -166,7 +197,11 @@ def kakao_callback(
     
     return response
 
+      "user_id": kakao_user_id,
+    })
 
+
+    return response
 # ---------------------------------------------------------
 # 3️⃣ Get Current User
 # ---------------------------------------------------------
@@ -182,9 +217,13 @@ def get_me(user: User = Depends(get_current_user)):
 # ---------------------------------------------------------
 # 4️⃣ Logout (Invalidate Refresh Token)
 # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 4️⃣ Logout (Invalidate Refresh Token)
+# ---------------------------------------------------------
 @router.post("/auth/logout")
 def logout(
     user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
     db: Session = Depends(get_db),
 ):
     user.app_refresh_token = None 
@@ -199,6 +238,9 @@ def logout(
     return {"message": "logout success"}
 
 
+# ---------------------------------------------------------
+# 5️⃣ Unlink Kakao Account
+# ---------------------------------------------------------
 # ---------------------------------------------------------
 # 5️⃣ Unlink Kakao Account
 # ---------------------------------------------------------
@@ -226,9 +268,15 @@ def unlink_account(
         },
         timeout=5,
     )
+    kakao_res = requests.post(
+        "https://kapi.kakao.com/v1/user/unlink",
+        headers={"Authorization": f"Bearer {user.access_token}"},
+    )
 
     if kakao_res.status_code != 200:
         raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Failed to unlink Kakao account",
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to unlink Kakao account",
         )
@@ -286,5 +334,6 @@ def refresh_access_token(
     new_access_token = create_access_token(user.id)
 
     return {
+        "app_access_token": new_access_token
         "app_access_token": new_access_token
     }

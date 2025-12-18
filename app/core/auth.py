@@ -1,7 +1,6 @@
-# app/core/auth.py
 from datetime import datetime, timedelta
 from typing import Optional
-import secrets
+import secretsimport secrets
 import jwt  # PyJWT (requirements.txt에 pyjwt 추가 필요)
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,6 +13,7 @@ from app.models.user import User  # ORM User 모델
 # TODO: 나중에 .env / settings로 빼기
 SECRET_KEY = "CHANGE_ME_TO_A_LONG_RANDOM_SECRET"
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60   # 1시간으로 변경
 ACCESS_TOKEN_EXPIRE_MINUTES = 60   # 1시간으로 변경
 
 bearer_scheme = HTTPBearer(auto_error=True)
