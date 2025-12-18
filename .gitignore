@@ -1,5 +1,6 @@
 # .env
 *.env
+.env
 
 # 가상환경 디렉토리
 .venv/
@@ -23,7 +24,5 @@ venv/
 Thumbs.db
 
 *.pem
-
-#static
-.static/
+*.pem/
 static/
