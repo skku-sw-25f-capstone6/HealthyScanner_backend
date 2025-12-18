@@ -31,6 +31,11 @@ class ScanHistoryBase(BaseModel):
     ai_vegan_report: Optional[str] = None
     ai_total_report: Optional[str] = None
 
+    ai_vegan_brief: Optional[str] = None
+    ai_allergy_brief: Optional[str] = None
+    ai_condition_brief: Optional[str] = None
+    ai_alter_brief: Optional[str] = None
+
     # [{"key":"heart_disease","level":"red"}, ...]
     caution_factors: Optional[List[Dict[str, Any]]] = None
 
