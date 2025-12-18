@@ -62,6 +62,12 @@ class ScanHistory(Base):
     ai_alter_report: Mapped[str] = mapped_column(Text, nullable=True)
     ai_vegan_report: Mapped[str] = mapped_column(Text, nullable=True)
     ai_total_report: Mapped[str] = mapped_column(Text, nullable=True)
+    
+    ai_vegan_brief: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_allergy_brief: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_condition_brief: Mapped[str] = mapped_column(Text, nullable=True)
+    ai_alter_brief: Mapped[str] = mapped_column(Text, nullable=True)
+    
 
     caution_factors: Mapped[list[dict[str, str]] | None] = mapped_column(MySQLJSON, nullable=True)
 

@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -15,7 +16,10 @@ class Settings(BaseSettings):
     KAKAO_REDIRECT_URI: str | None = None
 
     # --- 이미지 저장 설정 ---
-    IMAGE_BASE_DIR: str = "/home/yujd0219/capstone/backend/static"
+    # 기본값은 "프로젝트 기준 static"
+    IMAGE_BASE_DIR: str = str(
+        Path(__file__).resolve().parents[2] / "static"
+    )
     IMAGE_BASE_URL: str = "/static"
 
     class Config:

@@ -8,7 +8,7 @@ from app.core.errors import AppError, ErrorCode
 from fastapi import Request
 
 router = APIRouter(
-    prefix="/v1/scan-history",
+    prefix="/v1/scan",
     tags=["scan-flow"],
 )
 

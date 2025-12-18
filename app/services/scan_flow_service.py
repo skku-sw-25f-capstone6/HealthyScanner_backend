@@ -14,9 +14,10 @@ from app.schemas.user_daily_score import MaxSeverity
 
 AnalyzeType = Literal["barcode_image", "nutrition_label", "image"]
 
+
 class ScanFlowService:
     """
-    바코드 + 이미지 → 
+    바코드 + 이미지 →
       1) 개인화 분석 + 스캔 기록 생성
       2) nutrition / ingredient id 조회
       3) 최종적으로 ScanResultOut 리턴
@@ -27,7 +28,7 @@ class ScanFlowService:
         scan_history_service: ScanHistoryService,
         nutrition_service: NutritionService,
         ingredient_service: IngredientService,
-        product_service : ProductService,
+        product_service: ProductService,
         user_daily_score_service: UserDailyScoreService,
     ):
         self.scan_history_service = scan_history_service
@@ -53,7 +54,7 @@ class ScanFlowService:
             nutrition_text=None,
             analyze_type="barcode_image",
         )
-    
+
     async def from_nutrition_text(
         self,
         user_id: str,
@@ -67,11 +68,11 @@ class ScanFlowService:
             nutrition_text=nutrition_label,
             analyze_type="nutrition_label",
         )
-    
+
     async def from_image(
-            self,
-            user_id: str,
-            image: UploadFile | None,
+        self,
+        user_id: str,
+        image: UploadFile | None,
     ) -> ScanResultOut:
         return await self._scan_and_build_result(
             user_id=user_id,
@@ -80,7 +81,6 @@ class ScanFlowService:
             nutrition_text=None,
             analyze_type="image",
         )
-
 
     async def _scan_and_build_result(
         self,
@@ -106,17 +106,15 @@ class ScanFlowService:
             ingredient_id = None
 
         if scan.scanned_at is None:
-            raise RuntimeError("scan.scanned_at is None you idiot")
-        
-        if scan.decision is None:
-            raise RuntimeError("scan.decision is None you idiot")
-        
+            raise RuntimeError("scan.scanned_at is None")
 
-        # 2) user_daily_score 갱신
-        #    (local_date / severity / decision_key는 나중에 너랑 같이 정의)
-        local_date = scan.scanned_at.date()     # 일단 UTC date, 나중에 로컬로 바꾸자
-        decision_key = scan.decision.value      # 예: "allow" / "caution" / "avoid"
-        severity: MaxSeverity | None = None     # decision → severity 맵핑 함수 하나 만들면 좋음
+        if scan.decision is None:
+            raise RuntimeError("scan.decision is None")
+
+        # user_daily_score 갱신
+        local_date = scan.scanned_at.date()
+        decision_key = scan.decision      # ✅ str 그대로 사용
+        severity: MaxSeverity | None = None
 
         self.user_daily_score_service.update_on_scan(
             user_id=scan.user_id,
@@ -131,4 +129,3 @@ class ScanFlowService:
             nutrition_id=nutrition_id,
             ingredient_id=ingredient_id,
         )
-    

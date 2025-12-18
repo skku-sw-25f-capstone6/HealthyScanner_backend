@@ -13,7 +13,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 
 from fastapi.responses import JSONResponse
-
+from sqlalchemy import text
 
 
 from pydantic import BaseModel
@@ -194,6 +194,12 @@ def kakao_callback(
       "user_id": kakao_user_id,
     })
 
+    
+    return response
+
+      "user_id": kakao_user_id,
+    })
+
 
     return response
 # ---------------------------------------------------------
@@ -220,14 +226,13 @@ def logout(
     db: Session = Depends(get_db),
     db: Session = Depends(get_db),
 ):
-    user.app_refresh_token = None
-    # (선택) Kakao token 정리
-    user.access_token = None
-    user.refresh_token = None
-    user.token_type = None
-    user.token_type = None
-    user.expires_in = None
-    user.refresh_expires_in = None
+    user.app_refresh_token = None 
+    # (선택) Kakao token 정리 
+    user.access_token = None 
+    user.refresh_token = None 
+    user.token_type = None 
+    user.expires_in = None 
+    user.refresh_expires_in = None 
     db.commit()
 
     return {"message": "logout success"}
@@ -244,9 +249,24 @@ def unlink_account(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    KAKAO_ADMIN_KEY = os.getenv("KAKAO_ADMIN_KEY")
+    if not KAKAO_ADMIN_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="KAKAO_ADMIN_KEY not configured",
+        )
+
     kakao_res = requests.post(
         "https://kapi.kakao.com/v1/user/unlink",
-        headers={"Authorization": f"Bearer {user.access_token}"},
+        headers={
+            "Authorization": f"KakaoAK {KAKAO_ADMIN_KEY}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        data={
+            "target_id_type": "user_id",
+            "target_id": user.id,  # 카카오 user_id
+        },
+        timeout=5,
     )
     kakao_res = requests.post(
         "https://kapi.kakao.com/v1/user/unlink",
@@ -261,14 +281,25 @@ def unlink_account(
             detail="Failed to unlink Kakao account",
         )
 
-    user.access_token = None
-    user.refresh_token = None
-    user.app_refresh_token = None
-    user.app_refresh_token = None
-    user.deleted_at = datetime.utcnow()
+    db.execute(
+        text("DELETE FROM user_daily_score WHERE user_id = :uid"),
+        {"uid": user.id},
+    )
+    db.execute(
+        text("DELETE FROM scan_history WHERE user_id = :uid"),
+        {"uid": user.id},
+    )
+
+    
+    db.execute(
+        text("DELETE FROM user WHERE id = :uid"),
+        {"uid": user.id},
+    )
 
     db.commit()
     return {"message": "account unlinked"}
+
+
 # ---------------------------------------------------------
 # 📌 Refresh Token Request Schema
 # ---------------------------------------------------------

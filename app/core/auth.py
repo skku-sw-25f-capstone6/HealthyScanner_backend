@@ -74,7 +74,7 @@ def get_current_user(
     # 2) (옵션) 쿠키 fallback도 유지하고 싶다면
     if not token:
         token = request.cookies.get("access_token")
-
+    
 
     if not token:
         raise HTTPException(
@@ -105,4 +105,3 @@ def create_app_refresh_token() -> str:
     우리 서비스용 Refresh Token
     """
     return secrets.token_urlsafe(64)
-
