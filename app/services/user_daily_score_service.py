@@ -116,12 +116,12 @@ class UserDailyScoreService:
             self.db, user_id=user_id, local_date=local_date
         )
 
-        # 1️⃣ 홈 첫 진입: row 자체가 없으면 77로 생성
+        # 1️⃣ 홈 첫 진입: row 자체가 없으면 -1로 생성
         if uds is None:
             uds_create = UserDailyScoreCreate(
                 user_id=user_id,
                 local_date=local_date,
-                score=77,              # ⭐ 초기 고정 점수
+                score=-1,              # ⭐ 초기 고정 점수
                 num_scans=0,
                 max_severity=None,
                 decision_counts={},
@@ -130,7 +130,7 @@ class UserDailyScoreService:
                 last_computed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 sync_state=1,
             )
-            return self.user_daily_score_dal.create(self.db, uds_create)
+            return self.user_daily_score_dal.create_or_get(self.db, uds_create)
 
         # 2️⃣ 오늘 스캔 점수 통계
         stats = self.scan_history_dal.get_ai_score_stats_for_day(
@@ -139,11 +139,11 @@ class UserDailyScoreService:
         # stats = {"count": int, "avg_score": float | None}
 
         # 3️⃣ 초기 상태 보정
-        # - 오늘 스캔이 0개면 무조건 77
+        # - 오늘 스캔이 0개면 무조건 -1
         if (uds.num_scans or 0) == 0:
-            score = 77
+            score = -1
         elif not stats or stats["count"] == 0 or stats["avg_score"] is None:
-            score = 77
+            score = -1
         else:
             score = int(round(max(0.0, min(100.0, stats["avg_score"]))))
 

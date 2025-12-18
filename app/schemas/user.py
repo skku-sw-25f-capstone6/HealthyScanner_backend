@@ -41,6 +41,9 @@ class MyPageOut(BaseModel):
     name: str
     scan_count: int
     profile_image_url: Optional[str] = None
+    habit: List[str]
+    conditions: List[str]
+    allergies: List[str]
 
 class MyPageHabitIn(BaseModel):
     habit: str

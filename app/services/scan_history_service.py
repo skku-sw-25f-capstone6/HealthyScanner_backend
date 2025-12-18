@@ -195,6 +195,11 @@ class ScanHistoryService:
         ai_vegan_report: Optional[str] = ai_result.ai_vegan_report
         ai_total_report: Optional[str] = ai_result.ai_total_report
 
+        ai_allergy_brief: Optional[str] = ai_result.ai_allergy_brief
+        ai_condition_brief: Optional[str] = ai_result.ai_condition_brief
+        ai_alter_brief: Optional[str] = ai_result.ai_alter_brief
+        ai_vegan_brief: Optional[str] = ai_result.ai_vegan_brief
+
         caution_factors_raw: Optional[List[Dict[str, str]]] = ai_result.caution_factors
         caution_factors: Optional[List[Dict[str, str]]] = caution_factors_raw
 
@@ -220,7 +225,11 @@ class ScanHistoryService:
             ai_alter_report=ai_alter_report,
             ai_vegan_report=ai_vegan_report,
             ai_total_report=ai_total_report,
-            caution_factors=caution_factors
+            caution_factors=caution_factors,
+            ai_vegan_brief=ai_vegan_brief,
+            ai_alter_brief=ai_alter_brief,
+            ai_condition_brief=ai_condition_brief,
+            ai_allergy_brief=ai_allergy_brief
         )
 
         scan = self.scan_history_dal.create(self.db, data)
@@ -302,7 +311,7 @@ class ScanHistoryService:
         allergies_block = None
         if scan.ai_allergy_report:
             allergies_block = ReportBlock(
-                brief_report="알레르기 관련 주의가 필요해요.",
+                brief_report=scan.ai_allergy_brief,
                 face=face_for_negative(),
                 report=scan.ai_allergy_report,
             )
@@ -310,7 +319,7 @@ class ScanHistoryService:
         condition_block = None
         if scan.ai_condition_report:
             condition_block = ReportBlock(
-                brief_report="기저질환 관련 설명입니다.",
+                brief_report=scan.ai_condition_brief,
                 face=face_for_negative(),
                 report=scan.ai_condition_report,
             )
@@ -319,7 +328,7 @@ class ScanHistoryService:
         if scan.ai_alter_report:
             alternatives_list.append(
                 AlternativeReport(
-                    brief_report="대체 식품 추천",
+                    brief_report=scan.ai_alter_brief,
                     face=FaceType.GOOD,
                     report=scan.ai_alter_report,
                 )
@@ -328,7 +337,7 @@ class ScanHistoryService:
         vegan_block = None
         if scan.ai_vegan_report:
             vegan_block = ReportBlock(
-                brief_report="비건 관련 정보입니다.",
+                brief_report=scan.ai_vegan_brief,
                 face=face_for_negative(),
                 report=scan.ai_vegan_report,
             )

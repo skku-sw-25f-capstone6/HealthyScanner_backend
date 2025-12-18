@@ -23,6 +23,10 @@ CREATE TABLE scan_history (
     ai_alter_report     TEXT,
     ai_vegan_report     TEXT,
     ai_total_report     TEXT,
+    ai_allergy_brief   TEXT,
+    ai_condition_brief TEXT,
+    ai_alter_brief     TEXT,
+    ai_vegan_brief     TEXT,
 
     caution_factors JSON,
 

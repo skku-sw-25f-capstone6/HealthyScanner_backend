@@ -43,10 +43,17 @@ class UserService:
         else:
             scan_count: int = user_daily_score.num_scans
 
+        habit = user.habits
+        conditions = user.conditions
+        allergies = user.allergies
+
         return MyPageOut(
             name=str(user.name),
             scan_count=scan_count,
             profile_image_url=str(user.profile_image_url),
+            habit=habit or [],
+            conditions=conditions or [],
+            allergies=allergies or []
         )
     
     def update_habits(self, user_id: str, habit: str) -> MyPageHabitOut:

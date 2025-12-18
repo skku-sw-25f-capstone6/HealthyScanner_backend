@@ -3,6 +3,7 @@ from datetime import date, datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.models.user_daily_score import UserDailyScore
 from app.schemas.user_daily_score import UserDailyScoreCreate, UserDailyScoreUpdate
@@ -46,6 +47,34 @@ class UserDailyScoreDAL:
             )
             .first()
         )
+
+    @staticmethod
+    def create_or_get(db: Session, uds_in: UserDailyScoreCreate) -> UserDailyScore:
+        max_severity = uds_in.max_severity.value if uds_in.max_severity else None
+
+        uds = UserDailyScore(
+            user_id=uds_in.user_id,
+            local_date=uds_in.local_date,
+            score=uds_in.score,
+            num_scans=uds_in.num_scans,
+            max_severity=max_severity,
+            decision_counts=uds_in.decision_counts,
+            formula_version=uds_in.formula_version,
+            dirty=uds_in.dirty,
+            last_computed_at=uds_in.last_computed_at,
+            sync_state=uds_in.sync_state,
+        )
+        try:
+            db.add(uds)
+            db.commit()
+            db.refresh(uds)
+            return uds
+        except IntegrityError:
+            db.rollback()
+            # 이미 누가 만들었으면 그 row를 반환
+            return UserDailyScoreDAL.get(
+                db, user_id=uds_in.user_id, local_date=uds_in.local_date
+            )
 
     @staticmethod
     def list(

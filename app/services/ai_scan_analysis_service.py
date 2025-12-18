@@ -12,17 +12,75 @@ SCAN_RESULT_SCHEMA_HINT = """
 {
     "decision": "avoid" | "caution" | "ok",
     "ai_total_score": int,
+    "ai_allergy_brief": "string or null",
     "ai_allergy_report": "string or null",
+    "ai_condition_brief": "string or null",
     "ai_condition_report": "string or null",
+    "ai_alter_brief": "string or null",
     "ai_alter_report": "string or null",
+    "ai_vegan_brief": "string or null",
     "ai_vegan_report": "string or null",
     "ai_total_report": "string or null",
+    "product_name": "string or null",
+    "product_nutrition": {string: value, ...} or null,
+    "product_ingredients": ["string", ...] or null,
     "caution_factors": [
       "key": "string (e.g. 'hypertension', 'heart_disease', 'kidney_disease', ...)",
       "level": "red" | "yellow" | "green"
     ] or null,
     "ai_total_summary": "string"
 }
+"""
+
+CONDITIONS_SCHEMA_HINT = """
+Output JSON with key "conditions" as an array of strings.
+Allowed values:
+- none
+- hypertension
+- liverDisease
+- gout
+- diabetes
+- hyperlipidemia
+- kidneyDisease
+- thyroidDisease
+
+Example:
+{"conditions":["diabetes","hypertension"]}
+"""
+
+ALLERGIES_SCHEMA_HINT = """
+Output JSON with key "allergies" as an array of strings.
+Allowed values:
+- none
+- crustacean
+- wheat
+- shellfish
+- shrimp
+- dairy
+- beef
+- nut
+- peach
+- egg
+- apple
+- pineapple
+- fish
+- soy
+
+Example:
+{"allergies":["wheat","egg"]}
+"""
+
+DIET_SCHEMA_HINT = """
+Output JSON with key "diet" as a string.
+Allowed values:
+- regular
+- pescatarian
+- lactoVegetarian
+- ovoVegetarian
+- vegan
+
+Example:
+{"diet":"pescatarian"}
 """
 
 class AiScanAnalysisService:
@@ -89,90 +147,48 @@ class AiScanAnalysisService:
         else:
             product_text = "Product info missing"
         return f"""
-너는 HealthyScanner 앱에서 쓰이는 "개인 맞춤 영양 분석" 도우미야.
+너는 HealthyScanner 앱의 "개인 맞춤형 인공지능 영양사"야.
+사용자의 프로필과 제품 정보를 바탕으로 섭취 적합성을 판단하고, 사진(OCR)에서 직접 추출한 데이터를 결과물에 포함하는 것이 네 핵심 임무야.
 
-analyze_type 값에 따라 입력 형태가 달라져:
+[입력 데이터 정보]
+1. Analyze Type: {analyze_type}
+2. User Profile: {user_profile}
+3. Product Info: {product_text} (N/A일 수 있음)
+4. Nutrition Info: {nutrition_text} (N/A일 수 있음)
+5. Ingredients: {ingredient_text} (N/A일 수 있음)
+6. Image Data: (함께 전달된 이미지 파일)
 
-analyze_type이 "barcode_image"일 때, 입력은 JSON 문자열이라고 생각하면 돼:
+[수행 지침: 데이터 추출 및 보존]
+- **데이터 발굴**: 제공된 텍스트 정보가 부족(N/A 또는 Missing)하더라도, 함께 제공된 이미지를 OCR로 분석하여 다음 필드를 반드시 채워야 해.
+  - `product_name`: 이미지에서 확인되는 브랜드와 제품명을 정확히 추출해.
+  - `product_nutrition`: 이미지의 영양성분표에서 읽은 구체적 수치(당류, 지방, 단백질 등)를 JSON 형태로 구성해.
+  - `product_ingredients`: 이미지의 원재료명 섹션에서 확인되는 모든 성분을 리스트로 만들어.
+- **추측 금지**: 이미지나 텍스트에 없는 구체적인 숫자나 성분명을 지어내지 마. 보이지 않는다면 null로 처리하되, 정성적인 분석(예: "당류가 높아 보임")으로 대체해.
 
-analyze_type: {analyze_type}
+[수행 지침: UI 최적화 분석]
+- **Decision (판단)**: "avoid", "caution", "ok" 중 하나만 선택해. 정보가 부족하면 사용자의 안전을 위해 보수적으로(avoid/caution) 판단해.
+- **Brief vs Report (요약과 상세)**:
+  - `ai_*_brief`: **[빨간 박스/UI 전용]** 아주 짧고 강렬한 핵심 요약이야. 15자 내외로 작성해. (예: "당뇨 주의: 고당분", "땅콩 알레르기 위험")
+  - `ai_*_report`: 그 판단의 근거를 사용자에게 친절하게 설명해줘.
+- **Summary (전체 요약)**:
+  - `ai_total_summary`: 전체 분석 결과를 한두 문장으로 요약해. **공백 포함 반드시 50자 이내**로 작성해야 해.
 
-User Profile:
-{user_profile}
-
-Product Info:
-{product_text}
-
-Nutrition Info:
-{nutrition_text}
-
-Ingredients:
-{ingredient_text}
-
-analyze_type이 "nutrition_label" 일 때는 사용자 정보 + 영양 라벨 텍스트 + 이미지가 주어져:
-
-analyze_type: {analyze_type}
-
-User Profile:
-{user_profile}
-
-Nutrition Info:
-{nutrition_text}
-
-그리고 "image"일 때는, 사용자 정보 + 이미지가 함께 주어져:
-
-analyze_type: {analyze_type}
-
-User Profile:
-{user_profile}
-
-(이미지는 별도로 함께 전달됨)
-
-
-해야 할 일:
-- 위 정보를 바탕으로, 이 사용자가 이 제품을 먹어도 되는지 판단해 줘.
-- 알레르기, 질병(예: 당뇨), 식습관(저당, 고단백 선호), 비건 여부 등을 모두 고려해서,
-  사용자에게 보여줄 분석 결과를 만들어줘.
-- analyze_type에 따라 사용할 수 있는 정보가 다르다는 점을 인지하고 동작해야 해:
-  - "barcode_image", "nutrition_label": user_profile + product_text + nutrition_text + ingredient_text를 최우선으로 사용해.
-  - "image": user_profile + 이미지에서 직접 보이는 정보(제품명, 제로/무가당/고단백 문구, 비건 마크 등)만 사용해.
-    보이지 않는 영양 성분 수치나 성분명은 절대 지어내지 마.
-
-
-반환 형식은 아래 JSON 형식만 사용해야 해 (필드 이름, 구조를 변경하면 안 됨):
+[반환 형식 준수]
+반드시 아래 JSON 구조만 반환하고, JSON 외의 텍스트는 포함하지 마.
 
 {SCAN_RESULT_SCHEMA_HINT}
 
-추가 규칙:
+[값 범위 및 스키마 참조]
+- ai_total_score: 0~100 (정수)
+- caution_factors: 주의 요소가 있을 때만 {"key": "이유", "level": "색상"} 리스트로 구성.
+- Conditions/Allergies/Diet 허용값:
+{CONDITIONS_SCHEMA_HINT}
+{ALLERGIES_SCHEMA_HINT}
+{DIET_SCHEMA_HINT}
 
-1. 항상 유효한 JSON만 반환해 줘.
-   - JSON 바깥에는 어떤 텍스트도 쓰지 마.
-
-2. decision은 반드시 "avoid", "caution", "ok" 중 하나여야 해.
-   - 정보가 부족해서 애매하면, 사용자의 안전을 위해 더 보수적인 쪽("avoid" 또는 "caution")을 선택해.
-
-3. ai_total_score는 0~100 사이의 정수여야 해.
-   - 0~33: 나쁨, 34~66: 보통, 67~100: 좋음 정도 기준으로 생각해.
-
-4. "barcode_image", "nutrition_label"에서는 영양 정보 + 성분 정보를 최우선으로 보고 최선의 추론을 해줘.
-   - 구체적인 숫자(예: 당류 23g)를 모르면 절대 임의로 만들지 마.
-   - 대신, "당류가 많아 보임", "포화지방이 높은 편"처럼 정성적인 표현만 사용해.
-
-5. "image" analyze_type에서는 이미지에서 눈으로 직접 확인할 수 있는 정보만 사용해.
-   - 보이지 않는 영양 성분, 세부 함량, 성분명은 절대 추측하지 마.
-   - 대신 정보가 부족하면 "정확한 영양 성분을 알 수 없어 보수적으로 판단함"이라고 설명해.
-
-6. missing 정보(user_profile, product_text, nutrition_text, ingredient_text 중 일부가 비어 있거나 null)인 경우:
-   - 그 정보는 "모른다"로 간주하고 사용하지 마.
-   - 모르는 정보를 채우기 위해 새로운 사실을 만들어내지 마.
-   - 단, 그 상태에서라도 사용자의 안전을 위해 최선의 보수적 판단을 내려야 해.
-
-7. 모든 설명(ai_*_report, ai_total_summary)은 한국어로, 사용자에게 직접 말하듯이 쉽게 써 줘.
-   - ai_total_summary는 한두 문장짜리 짧은 요약으로 써 줘.
-   - ai_*_report 값이 정말로 할 말이 없으면 null을 넣어도 돼.
-
-8. caution_factors는, 주의해야 할 요소(예: "당류가 높음", "포화지방이 많음", "땅콩 알레르기 위험")가 있을 때만 리스트로 채우고,
-   없으면 null로 해.
+[언어 및 톤앤매너]
+- 모든 설명은 한국어로 작성해.
+- 사용자에게 직접 말하듯이 친절하고 쉬운 용어를 사용해.
         """.strip()
 
     def _fallback(self, msg: str) -> AiScanResult:
@@ -184,8 +200,15 @@ User Profile:
             ai_alter_report=None,
             ai_vegan_report=None,
             ai_total_report=msg,
+            ai_allergy_brief=None,
+            ai_condition_brief=None,
+            ai_alter_brief=None,
+            ai_vegan_brief=None,
             caution_factors=None,
-            ai_total_summary="Error, fallback"
+            ai_total_summary="Error, fallback",
+            product_name=None,
+            product_nutrition=None,
+            product_ingredients=None,
         )
 
     async def analyze(
@@ -213,6 +236,7 @@ User Profile:
                 {
                     "type": "image_url",
                     "image_url": {"url": image_data_url},
+                    "detail": "high"
                 }
             )
         
