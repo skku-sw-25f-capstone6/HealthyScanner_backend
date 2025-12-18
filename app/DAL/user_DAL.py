@@ -28,7 +28,7 @@ class UserDAL:
     def get(db: Session, user_id: str) -> Optional[User]:
         return (
             db.query(User)
-            .filter(User.id == user_id, User.deleted_at.is_(None))
+            .filter(User.id == user_id)
             .first()
         )
 

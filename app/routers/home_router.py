@@ -38,6 +38,6 @@ def get_home(
         db=db,
         user_daily_score_service=uds_service,
         scan_history_dal=scan_history_dal,
-        product_dal=product_dal,
+        
     )
     return service.get_home(user_id=current_user.id)

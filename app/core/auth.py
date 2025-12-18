@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 import secrets
 import jwt  # PyJWT (requirements.txt에 pyjwt 추가 필요)
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
@@ -17,7 +17,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60   # 1시간으로 변경
 
 bearer_scheme = HTTPBearer(auto_error=True)
-
+security = HTTPBearer(auto_error=False)
 
 def create_access_token(
     user_id: str,
@@ -61,21 +61,29 @@ def decode_access_token(token: str) -> dict:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    request: Request,
+    creds: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db),
 ) -> User:
-    """
-    Depends(get_current_user)를 쓰는 라우터는
-    - Authorization: Bearer <우리 JWT> 헤더를 요구하게 됨
-    - JWT에서 user_id(sub)를 꺼내서 DB에서 User를 찾아 반환
+    token = None
 
-    라우터 입장에서는 'current_user: User'만 받으면 되고,
-    JWT 파싱/검증은 전혀 몰라도 됨.
-    """
-    token = credentials.credentials  # "Bearer xxx" 중 xxx 부분
+    # 1) Authorization: Bearer <token>
+    if creds and creds.scheme.lower() == "bearer":
+        token = creds.credentials
+
+    # 2) (옵션) 쿠키 fallback도 유지하고 싶다면
+    if not token:
+        token = request.cookies.get("access_token")
+    
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+        )
 
     payload = decode_access_token(token)
-    user_id: Optional[str] = payload.get("sub")
+    user_id = payload.get("sub")
 
     if not user_id:
         raise HTTPException(
