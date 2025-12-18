@@ -22,7 +22,7 @@ class ScanHistoryDAL:
             display_name=sh_in.display_name,
             display_category=sh_in.display_category,
             image_url=sh_in.image_url,
-            decision=sh_in.decision.value if sh_in.decision is not None else None,
+            decision=sh_in.decision,
             summary=sh_in.summary,
             ai_total_score=sh_in.ai_total_score,
             conditions=sh_in.conditions,
@@ -146,10 +146,7 @@ class ScanHistoryDAL:
             return None
 
         data = sh_in.model_dump(exclude_unset=True)
-        # Enum → 문자열 변환
-        if "decision" in data and data["decision"] is not None:
-            data["decision"] = data["decision"].value
-
+        
         for field, value in data.items():
             setattr(scan, field, value)
 

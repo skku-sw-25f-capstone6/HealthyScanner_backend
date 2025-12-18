@@ -5,7 +5,8 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exceptions import RequestValidationError
 from app.core.errors import AppError, ErrorCode
-
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 from app.routers import (
     user_router,
     product_router,
@@ -39,6 +40,32 @@ app.include_router(auth_router.router)
 app.include_router(auth_user_router.router)
 app.include_router(scan_flow_router.router)
 app.include_router(home_router.router)
+
+
+
+@app.get("/")
+def root():
+    return JSONResponse({
+        "message": "HealthyScanner backend running"
+    })
+
+
+#사진 가져오는 메서드
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "static"),
+    name="static",
+)
+
+
+
+
+
+
+
 
 """
 @app.middleware("http")
