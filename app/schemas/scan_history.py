@@ -125,6 +125,7 @@ class ScanDetailOut(BaseModel):
 class ScanSummaryOut(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
+    scanID: Optional[str] = None
     riskLevel: Optional[str] = None
     summary: Optional[str] = None
     url: Optional[str] = None
