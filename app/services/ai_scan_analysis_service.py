@@ -284,7 +284,7 @@ class AiScanAnalysisService:
 
         try:
             resp = await self.client.chat.completions.create(
-                model="gpt-4o",      # 너가 쓰고 싶은 모델로 변경
+                model="gpt-5.2",      # 너가 쓰고 싶은 모델로 변경
                 messages=[
                     {
                         "role": "user", 
