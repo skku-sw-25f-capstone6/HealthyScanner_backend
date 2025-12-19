@@ -23,7 +23,7 @@ SCAN_RESULT_SCHEMA_HINT = """
     "ai_total_report": "string or null",
     "product_name": "string or null",
     "product_nutrition": {string: value, ...} or null,
-    "product_ingredients": ["string", ...] or null,
+    "product_ingredients": "string or null",
     "caution_factors": [
         {
             "key": "string",
