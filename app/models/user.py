@@ -11,6 +11,12 @@ class User(Base):
     __tablename__ = "user"
 
     id: Mapped[str] = mapped_column(String(50), primary_key=True, index=True)
+
+    kakao_user_id: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )
+
+
     name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     profile_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 

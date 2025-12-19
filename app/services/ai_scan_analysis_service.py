@@ -25,9 +25,11 @@ SCAN_RESULT_SCHEMA_HINT = """
     "product_nutrition": {string: value, ...} or null,
     "product_ingredients": ["string", ...] or null,
     "caution_factors": [
-      "key": "string (e.g. 'hypertension', 'heart_disease', 'kidney_disease', ...)",
-      "level": "red" | "yellow" | "green"
-    ] or null,
+        {
+            "key": "string",
+            "level": "red" | "yellow" | "green"
+        }
+    ] or null
     "ai_total_summary": "string"
 }
 """
@@ -168,10 +170,10 @@ class AiScanAnalysisService:
 [수행 지침: UI 최적화 분석]
 - **Decision (판단)**: "avoid", "caution", "ok" 중 하나만 선택해. 정보가 부족하면 사용자의 안전을 위해 보수적으로(avoid/caution) 판단해.
 - **Brief vs Report (요약과 상세)**:
-  - `ai_*_brief`: **[빨간 박스/UI 전용]** 아주 짧고 강렬한 핵심 요약이야. 15자 내외로 작성해. (예: "당뇨 주의: 고당분", "땅콩 알레르기 위험")
-  - `ai_*_report`: 그 판단의 근거를 사용자에게 친절하게 설명해줘.
+  - `ai_*_brief`: 아주 짧고 강렬한 핵심 요약이야. 15자 내외로 반드시 작성해. (예: "당뇨 주의: 고당분", "땅콩 알레르기 위험")
+  - `ai_*_report`: 그 판단의 근거를 사용자에게 친절하게 반드시 설명해줘.
 - **Summary (전체 요약)**:
-  - `ai_total_summary`: 전체 분석 결과를 한두 문장으로 요약해. **공백 포함 반드시 50자 이내**로 작성해야 해.
+  - `ai_total_summary`: 전체 분석 결과를 한두 문장으로 요약해. 반드시 공백 포함 반드시 50자 이내로 작성해야 해.
 
 [반환 형식 준수]
 반드시 아래 JSON 구조만 반환하고, JSON 외의 텍스트는 포함하지 마.

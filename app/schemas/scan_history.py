@@ -97,9 +97,9 @@ class FaceType(str, Enum):
     NOT_BAD = "NOT BAD"
 
 class ReportBlock(BaseModel):
-    brief_report: str
+    brief_report: Optional[str] = None
     face: FaceType
-    report: str
+    report: Optional[str] = None
 
 class AlternativeReport(ReportBlock):
     """필요하면 나중에 필드 추가할 용도, 지금은 ReportBlock과 동일"""

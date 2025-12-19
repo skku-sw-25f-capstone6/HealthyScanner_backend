@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-
+from uuid import uuid4
 from app.core.database import get_db
 from app.models.user import User
 from app.core.auth import create_access_token, get_current_user, create_app_refresh_token
@@ -117,11 +117,12 @@ def kakao_callback(
     # -------------------------------------------------
     # Step 3) User Upsert
     # -------------------------------------------------
-    user = db.query(User).filter(User.id == kakao_user_id).first()
+    user = db.query(User).filter(User.kakao_user_id == kakao_user_id, User.deleted_at.is_(None),).first()
 
     if not user:
         user = User(
-            id=kakao_user_id,
+            id=str(uuid4()),
+            kakao_user_id=kakao_user_id,
             name=nickname,
             profile_image_url=profile_image,
             created_at=datetime.utcnow(),
@@ -138,7 +139,7 @@ def kakao_callback(
     # -------------------------------------------------
     # 🔐 App Token Issuance
     # -------------------------------------------------
-    app_access_token = create_access_token(kakao_user_id)
+    app_access_token = create_access_token(user.id)
     app_refresh_token = create_app_refresh_token()
 
     user.app_refresh_token = app_refresh_token
@@ -159,8 +160,8 @@ def kakao_callback(
       "token_type": token_type,
       "expires_in": expires_in,
       "refresh_expires_in": refresh_expires_in,
-
-      "user_id": kakao_user_id,
+      "kakao_user_id" : kakao_user_id,
+      "user_id": user.id,
     })
 
     
@@ -222,7 +223,7 @@ def unlink_account(
         },
         data={
             "target_id_type": "user_id",
-            "target_id": user.id,  # 카카오 user_id
+            "target_id": user.kakao_user_id,  # 카카오 user_id
         },
         timeout=5,
     )
