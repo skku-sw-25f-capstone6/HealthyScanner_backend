@@ -188,16 +188,24 @@ def logout(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    user.app_refresh_token = None 
-    # (선택) Kakao token 정리 
-    user.access_token = None 
-    user.refresh_token = None 
-    user.token_type = None 
-    user.expires_in = None 
-    user.refresh_expires_in = None 
+    token = request.headers.get("Authorization")
+    if not token:
+        return {"message": "Already logged out.(No Token Found)"}
+
+    try:
+        user = get_current_user(request, db=db)
+    except Exception:
+        return {"message": "already logged out"}
+
+    user.app_refresh_token = None
+    user.access_token = None
+    user.refresh_token = None
+    user.token_type = None
+    user.expires_in = None
+    user.refresh_expires_in = None
     db.commit()
 
-    return {"message": "logout success"}
+    return {"message": "logout 성공!"}
 
 
 # ---------------------------------------------------------
