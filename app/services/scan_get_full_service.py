@@ -100,7 +100,7 @@ class ScanGetFullService:
 
         if nutrition is None:
             ai_response = scan.product_nutrition
-            nutrition = NutritionBase.model_validate(ai_response)
+            nutrition = NutritionBase.model_validate(ai_response or {})
 
         if ingredient is None:
             ai_response = scan.product_ingredient

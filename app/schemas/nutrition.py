@@ -2,25 +2,27 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, Field
 import re
 
 
 class NutritionBase(BaseModel):
-    per_serving_grams: Optional[float] = None
-    calories: Optional[float] = None
-    carbs_g: Optional[float] = None
-    sugar_g: Optional[float] = None
-    protein_g: Optional[float] = None
-    fat_g: Optional[float] = None
-    sat_fat_g: Optional[float] = None
-    trans_fat_g: Optional[float] = None
-    sodium_mg: Optional[float] = None
-    cholesterol_mg: Optional[float] = None
+    model_config = {
+            "populate_by_name": True
+    }
 
-    class Config:
-        populate_by_name = True
-        
+    per_serving_grams: float | None = Field(None, alias="per_serving_grams")
+    calories: float | None = Field(None, alias="calories")
+    carbs_g: float | None = Field(None, alias="carbohydrate")
+    sugar_g: float | None = Field(None, alias="sugars")
+    protein_g: float | None = Field(None, alias="protein")
+    fat_g: float | None = Field(None, alias="fat")
+    sat_fat_g: float | None = Field(None, alias="saturated_fat")
+    trans_fat_g: float | None = Field(None, alias="trans_fat")
+    sodium_mg: float | None = Field(None, alias="sodium")
+    cholesterol_mg: float | None = Field(None, alias="cholesterol")
+
+
     @field_validator("*", mode="before")
     @classmethod
     def extract_number(cls, v):
