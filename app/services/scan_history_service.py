@@ -205,7 +205,7 @@ class ScanHistoryService:
     
         product_name: Optional[str] = ai_result.product_name
         product_nutrition: Optional[dict[str, str]] = ai_result.product_nutrition
-        product_ingredients: Optional[List[str]] = ai_result.product_ingredients
+        product_ingredients: Optional[str] = ai_result.product_ingredients
 
         now_aware = datetime.now(timezone.utc)
         scanned_at = now_aware.replace(tzinfo=None)  # naive datetime 저장
