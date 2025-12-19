@@ -85,6 +85,41 @@ Example:
 {"diet":"pescatarian"}
 """
 
+# 영문 코드를 한글 라벨로 변환하는 마스터 맵
+ENG_TO_KOR = """{
+    # Diet
+    'regular': '일반식',
+    'pescatarian': '생선 채식',
+    'lactoVegetarian': '유제품 허용 채식',
+    'ovoVegetarian': '달걀 허용 채식',
+    'vegan': '채식',
+    
+    # Conditions
+    'hypertension': '고혈압',
+    'liverDisease': '간질환',
+    'gout': '통풍',
+    'diabetes': '당뇨병',
+    'hyperlipidemia': '고지혈증',
+    'kidneyDisease': '신장질환',
+    'thyroidDisease': '갑상선질환',
+    
+    # Allergies
+    'crustacean': '갑각류',
+    'wheat': '밀',
+    'shellfish': '조개류',
+    'shrimp': '새우',
+    'dairy': '유제품',
+    'beef': '소고기',
+    'nut': '견과류',
+    'peanut': '땅콩',
+    'peach': '복숭아',
+    'egg': '계란',
+    'apple': '사과',
+    'pineapple': '파인애플',
+    'fish': '생선',
+    'soy': '대두(콩)',
+}"""
+
 class AiScanAnalysisService:
     def __init__(self, openai_client):
         self.client = openai_client
@@ -187,6 +222,9 @@ class AiScanAnalysisService:
 {CONDITIONS_SCHEMA_HINT}
 {ALLERGIES_SCHEMA_HINT}
 {DIET_SCHEMA_HINT}
+
+- Conditions/Allergies/Diet 허용값에 대해서 이걸 보고 한국말로 바꿔줘:
+{ENG_TO_KOR}
 
 [언어 및 톤앤매너]
 - 모든 설명은 한국어로 작성해.
