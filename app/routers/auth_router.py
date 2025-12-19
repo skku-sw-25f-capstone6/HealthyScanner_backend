@@ -188,12 +188,12 @@ def logout(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    token = request.headers.get("Authorization")
+    token = requests.headers.get("Authorization")
     if not token:
         return {"message": "Already logged out.(No Token Found)"}
 
     try:
-        user = get_current_user(request, db=db)
+        user = get_current_user(requests, db=db)
     except Exception:
         return {"message": "already logged out"}
 
