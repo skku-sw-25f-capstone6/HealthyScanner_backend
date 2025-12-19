@@ -1,3 +1,4 @@
+from urllib import request
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
@@ -5,7 +6,7 @@ from uuid import uuid4
 from app.core.database import get_db
 from app.models.user import User
 from app.core.auth import create_access_token, get_current_user, create_app_refresh_token
-
+from fastapi import Request
 import requests
 import os
 from datetime import datetime
@@ -185,15 +186,15 @@ def get_me(user: User = Depends(get_current_user)):
 # ---------------------------------------------------------
 @router.post("/auth/logout")
 def logout(
-    user: User = Depends(get_current_user),
+    request: Request,
     db: Session = Depends(get_db),
 ):
-    token = requests.headers.get("Authorization")
+    token = request.headers.get("Authorization")
     if not token:
         return {"message": "Already logged out.(No Token Found)"}
 
     try:
-        user = get_current_user(requests, db=db)
+        user = get_current_user(request, db=db)
     except Exception:
         return {"message": "already logged out"}
 
@@ -250,7 +251,6 @@ def unlink_account(
         text("DELETE FROM scan_history WHERE user_id = :uid"),
         {"uid": user.id},
     )
-
     
     db.execute(
         text("DELETE FROM user WHERE id = :uid"),
