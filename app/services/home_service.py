@@ -67,6 +67,7 @@ class HomeService:
                 {
                     "name": scan.display_name,
                     "category": scan.display_category,
+                    "scanID": scan.id,
                     "riskLevel": self._decision_to_risk_level(scan.decision),
                     "summary": scan.ai_total_report,
                     "url": scan.image_url,
