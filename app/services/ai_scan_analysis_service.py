@@ -23,7 +23,7 @@ SCAN_RESULT_SCHEMA_HINT = """
     "ai_total_report": "string or null",
     "product_name": "string or null",
     "product_nutrition": {string: value, ...} or null,
-    "product_ingredients": "string or null",
+    "product_ingredient": "string or null",
     "caution_factors": [
         {
             "key": "string",
@@ -212,7 +212,7 @@ class AiScanAnalysisService:
 - **데이터 발굴**: 제공된 텍스트 정보가 부족(N/A 또는 Missing)하더라도, 함께 제공된 이미지를 OCR로 분석하여 다음 필드를 반드시 채워야 해.
   - `product_name`: 이미지에서 확인되는 브랜드와 제품명을 정확히 추출해.
   - `product_nutrition`: 이미지의 영양성분표에서 읽은 구체적 수치(당류, 지방, 단백질 등)를 JSON 형태로 구성해.
-  - `product_ingredients`: 이미지의 원재료명 섹션에서 확인되는 모든 성분을 리스트로 만들어.
+  - `product_ingredient`: 이미지의 원재료명 섹션에서 확인되는 모든 성분을 리스트로 만들어.
 - **추측 금지**: 이미지나 텍스트에 없는 구체적인 숫자나 성분명을 지어내지 마. 보이지 않는다면 null로 처리하되, 정성적인 분석(예: "당류가 높아 보임")으로 대체해.
 
 [수행 지침: UI 최적화 분석]
@@ -268,7 +268,7 @@ class AiScanAnalysisService:
             ai_total_summary="Error, fallback",
             product_name=None,
             product_nutrition=None,
-            product_ingredients=None,
+            product_ingredient=None,
         )
 
     async def analyze(

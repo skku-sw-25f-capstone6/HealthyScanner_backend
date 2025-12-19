@@ -205,7 +205,7 @@ class ScanHistoryService:
     
         product_name: Optional[str] = ai_result.product_name
         product_nutrition: Optional[dict[str, str]] = ai_result.product_nutrition
-        product_ingredients: Optional[str] = ai_result.product_ingredients
+        product_ingredient: Optional[str] = ai_result.product_ingredient
 
         now_aware = datetime.now(timezone.utc)
         scanned_at = now_aware.replace(tzinfo=None)  # naive datetime 저장
@@ -235,7 +235,7 @@ class ScanHistoryService:
             ai_allergy_brief=ai_allergy_brief,
             product_name=product_name,
             product_nutrition=product_nutrition,
-            product_ingredients=product_ingredients
+            product_ingredient=product_ingredient
         )
 
         scan = self.scan_history_dal.create(self.db, data)

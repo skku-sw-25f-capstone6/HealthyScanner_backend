@@ -36,7 +36,7 @@ class ScanHistoryDAL:
             caution_factors=sh_in.caution_factors,
             product_name=sh_in.product_name,
             product_nutrition=sh_in.product_nutrition,
-            product_ingredients=sh_in.product_ingredients
+            product_ingredient=sh_in.product_ingredient
         )
         db.add(scan)
         db.commit()

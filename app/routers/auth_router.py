@@ -271,7 +271,7 @@ class RefreshTokenRequest(BaseModel):
 # ---------------------------------------------------------
 # 6️⃣ Refresh Access Token
 # ---------------------------------------------------------
-@router.post("/auth/refresh")
+@router.post("/v1/auth/refresh")
 def refresh_access_token(
     body: RefreshTokenRequest,
     db: Session = Depends(get_db),
