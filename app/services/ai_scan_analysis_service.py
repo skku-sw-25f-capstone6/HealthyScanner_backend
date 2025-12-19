@@ -180,7 +180,7 @@ class AiScanAnalysisService:
 
 [값 범위 및 스키마 참조]
 - ai_total_score: 0~100 (정수)
-- caution_factors: 주의 요소가 있을 때만 {"key": "이유", "level": "색상"} 리스트로 구성.
+- caution_factors: 주의 요소가 있을 때만 {{"key": "이유", "level": "색상"}} 리스트로 구성.
 - Conditions/Allergies/Diet 허용값:
 {CONDITIONS_SCHEMA_HINT}
 {ALLERGIES_SCHEMA_HINT}
