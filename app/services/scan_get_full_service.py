@@ -9,10 +9,12 @@ from app.DAL.ingredient_DAL import IngredientDAL
 
 from app.schemas.scan_full import ScanFullOut, ScanPartOut
 from app.schemas.product import ProductSimpleOut
-from app.schemas.nutrition import NutritionDetail
-from app.schemas.ingredient import IngredientText
+from app.schemas.nutrition import NutritionDetail, NutritionBase
+from app.schemas.ingredient import IngredientText, IngredientBase
 
 from app.services.scan_history_service import ScanHistoryService
+
+
 
 
 class ScanGetFullService:
@@ -49,6 +51,10 @@ class ScanGetFullService:
             raise RuntimeError("scan_history should not be None here")
 
         name = scan_history.display_name or f"{d.month}월 {d.day}일 {order}번"
+
+        if scan.product_name:
+            name = scan.product_name
+
         category = scan_history.display_category or "Uncategorized"
 
         product_id = scan_history.product_id
@@ -91,6 +97,17 @@ class ScanGetFullService:
         # nutrition / ingredient는 없을 수도 있으니 Optional
         nutrition = self.nutrition_dal.get_id_by_product_id(self.db, scan.product_id)
         ingredient = self.ingredient_dal.get_id_by_product_id(self.db, scan.product_id)
+
+        if nutrition is None:
+            ai_response = scan.product_nutrition
+            nutrition = NutritionBase.model_validate(ai_response)
+
+        if ingredient is None:
+            ai_response = scan.product_ingredient
+            if ai_response:
+                ingredient = IngredientBase(raw_ingredient=ai_response)
+            else:
+                ingredient = IngredientBase(raw_ingredient="")
 
         return ScanFullOut(
             product=product_out,

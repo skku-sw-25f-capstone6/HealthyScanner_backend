@@ -2,6 +2,7 @@
 from sqlalchemy import (
     Column,
     String,
+    Float,
     Text,
     Integer,
     DateTime,
@@ -11,7 +12,7 @@ from sqlalchemy.dialects.mysql import JSON as MySQLJSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Mapped, mapped_column
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 from app.core.database import Base
 
 
@@ -68,6 +69,10 @@ class ScanHistory(Base):
     ai_condition_brief: Mapped[str] = mapped_column(Text, nullable=True)
     ai_alter_brief: Mapped[str] = mapped_column(Text, nullable=True)
     
+    product_name: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    product_nutrition: Mapped[Optional[dict[str, Any]]] = mapped_column(MySQLJSON, nullable=True)
+    product_ingredient: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
 
     caution_factors: Mapped[list[dict[str, str]] | None] = mapped_column(MySQLJSON, nullable=True)
 

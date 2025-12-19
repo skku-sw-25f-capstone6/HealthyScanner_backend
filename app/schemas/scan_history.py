@@ -36,6 +36,10 @@ class ScanHistoryBase(BaseModel):
     ai_condition_brief: Optional[str] = None
     ai_alter_brief: Optional[str] = None
 
+    product_name: Optional[str] = None
+    product_nutrition: Optional[Dict[str, Any]] = None
+    product_ingredients: Optional[List[str]] = None
+    
     # [{"key":"heart_disease","level":"red"}, ...]
     caution_factors: Optional[List[Dict[str, Any]]] = None
 

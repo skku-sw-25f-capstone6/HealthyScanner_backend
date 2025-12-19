@@ -202,7 +202,10 @@ class ScanHistoryService:
 
         caution_factors_raw: Optional[List[Dict[str, str]]] = ai_result.caution_factors
         caution_factors: Optional[List[Dict[str, str]]] = caution_factors_raw
-
+    
+        product_name: Optional[str] = ai_result.product_name
+        product_nutrition: Optional[dict[str, str]] = ai_result.product_nutrition
+        product_ingredients: Optional[List[str]] = ai_result.product_ingredients
 
         now_aware = datetime.now(timezone.utc)
         scanned_at = now_aware.replace(tzinfo=None)  # naive datetime 저장
@@ -229,7 +232,10 @@ class ScanHistoryService:
             ai_vegan_brief=ai_vegan_brief,
             ai_alter_brief=ai_alter_brief,
             ai_condition_brief=ai_condition_brief,
-            ai_allergy_brief=ai_allergy_brief
+            ai_allergy_brief=ai_allergy_brief,
+            product_name=product_name,
+            product_nutrition=product_nutrition,
+            product_ingredients=product_ingredients
         )
 
         scan = self.scan_history_dal.create(self.db, data)

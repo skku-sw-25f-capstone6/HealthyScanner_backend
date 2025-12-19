@@ -85,6 +85,19 @@ Example:
 {"diet":"pescatarian"}
 """
 
+NUTRITION_MAP = """
+per_serving_grams: 총 내용량 또는 1회 제공량
+calories: 열량
+carbohydrate: 탄수화물
+sugars: 당류
+protein: 단백질
+fat: 지방
+saturated_fat: 포화지방
+trans_fat: 트랜스지방
+sodium: 나트륨
+cholesterol: 콜레스테롤
+"""
+
 # 영문 코드를 한글 라벨로 변환하는 마스터 맵
 ENG_TO_KOR = """{
     # Diet
@@ -203,10 +216,11 @@ class AiScanAnalysisService:
 - **추측 금지**: 이미지나 텍스트에 없는 구체적인 숫자나 성분명을 지어내지 마. 보이지 않는다면 null로 처리하되, 정성적인 분석(예: "당류가 높아 보임")으로 대체해.
 
 [수행 지침: UI 최적화 분석]
-- **Decision (판단)**: "avoid", "caution", "ok" 중 하나만 선택해. 정보가 부족하면 사용자의 안전을 위해 보수적으로(avoid/caution) 판단해.
+- **Decision (판단)**: "avoid", "caution", "ok" 중 하나만 선택해. 
+- 갑각류, 밀, 조개, 새우, 유제품, 소고기, 견과류, 땅콩, 복숭아, 계란, 사과, 파인애플, 생선, 대두" 라는 단어가 있으면 무조건 알레르기 단계를 avoid 단계를 부여해. 그 외 해당 원재료들의 가공품이라고 판단되거나, 같은 제조시설에서 생산한 제품들에 대해서는 caution 단계를 부여해.
 - **Brief vs Report (요약과 상세)**:
   - `ai_*_brief`: 아주 짧고 강렬한 핵심 요약이야. 15자 내외로 반드시 작성해. (예: "당뇨 주의: 고당분", "땅콩 알레르기 위험")
-  - `ai_*_report`: 그 판단의 근거를 사용자에게 친절하게 반드시 설명해줘.
+  - `ai_*_report`: 그 판단의 근거를 사용자에게 친절하게 반드시 설명해줘. 반드시 100자 이내로 작성해야 해.
 - **Summary (전체 요약)**:
   - `ai_total_summary`: 전체 분석 결과를 한두 문장으로 요약해. 반드시 공백 포함 반드시 50자 이내로 작성해야 해.
 
@@ -226,9 +240,15 @@ class AiScanAnalysisService:
 - Conditions/Allergies/Diet 허용값에 대해서 이걸 보고 한국말로 바꿔줘:
 {ENG_TO_KOR}
 
+- 영양 성분표에 대해서 값은 이미지에 적힌 숫자와 단위를 그대로 포함해줘. (예: "160mg", "1 g 미만")
+- 영양 성분표에 대해서 아래를 참고하여 영어로 바꿔줘:
+{NUTRITION_MAP}
+
 [언어 및 톤앤매너]
 - 모든 설명은 한국어로 작성해.
 - 사용자에게 직접 말하듯이 친절하고 쉬운 용어를 사용해.
+- 순수 텍스트(Plain Text)만 써. 
+- ~해요체를 사용해.
         """.strip()
 
     def _fallback(self, msg: str) -> AiScanResult:

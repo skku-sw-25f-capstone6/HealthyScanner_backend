@@ -2,7 +2,8 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+import re
 
 
 class NutritionBase(BaseModel):
@@ -16,6 +17,19 @@ class NutritionBase(BaseModel):
     trans_fat_g: Optional[float] = None
     sodium_mg: Optional[float] = None
     cholesterol_mg: Optional[float] = None
+
+    class Config:
+        populate_by_name = True
+        
+    @field_validator("*", mode="before")
+    @classmethod
+    def extract_number(cls, v):
+        if isinstance(v, str):
+            # 정규식으로 숫자(소수점 포함)만 추출
+            match = re.search(r"(\d+(\.\d+)?)", v)
+            if match:
+                return float(match.group(1))
+        return v
 
 
 class NutritionCreate(NutritionBase):
