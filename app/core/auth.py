@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Optional
-import secretsimport secrets
+import secrets
 import jwt  # PyJWT (requirements.txt에 pyjwt 추가 필요)
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
