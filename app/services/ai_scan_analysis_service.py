@@ -235,8 +235,7 @@ class AiScanAnalysisService:
             content.append(
                 {
                     "type": "image_url",
-                    "image_url": {"url": image_data_url},
-                    "detail": "high"
+                    "image_url": {"url": image_data_url, "detail": "high"},
                 }
             )
         
