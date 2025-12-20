@@ -23,6 +23,9 @@ class Product(Base):
 
     score: Mapped[int] = mapped_column(Integer, nullable=True)
 
+    allergens: Mapped[str] = mapped_column(Text, nullable=True)
+    trace_allergens: Mapped[str] = mapped_column(Text, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
         nullable=False,
