@@ -283,11 +283,11 @@ class ScanHistoryService:
 
             scan_list.append(
                 ScanSummaryOut(
-                    name=s.display_name,
+                    name=s.product_name if s.product_name else s.display_name,
                     category=s.display_category,
                     scanID=s.id,
                     riskLevel=risk_level,     # DB에 컬럼 있으면
-                    summary=s.ai_total_report,  # or summary 필드
+                    summary=s.summary,  # or summary 필드
                     url=s.image_url,            # 이미지 저장한 컬럼명
                 )
             )
