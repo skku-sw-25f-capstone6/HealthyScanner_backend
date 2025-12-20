@@ -235,7 +235,8 @@ class ScanHistoryService:
             ai_allergy_brief=ai_allergy_brief,
             product_name=product_name,
             product_nutrition=product_nutrition,
-            product_ingredient=product_ingredient
+            product_ingredient=product_ingredient,
+            dirty=False
         )
 
         scan = self.scan_history_dal.create(self.db, data)
@@ -255,6 +256,7 @@ class ScanHistoryService:
         update_in = ScanHistoryUpdate(
             display_name=display_name,
             display_category=display_category,
+            dirty=True,
         )
 
         scan = self.scan_history_dal.update(self.db, scan_id, update_in)
@@ -283,7 +285,7 @@ class ScanHistoryService:
 
             scan_list.append(
                 ScanSummaryOut(
-                    name=s.product_name if s.product_name else s.display_name,
+                    name=s.product_name if not s.dirty else s.display_name,
                     category=s.display_category,
                     scanID=s.id,
                     riskLevel=risk_level,     # DB에 컬럼 있으면

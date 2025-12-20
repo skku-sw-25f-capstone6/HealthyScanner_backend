@@ -40,6 +40,8 @@ class ScanHistoryBase(BaseModel):
     product_ingredient: Optional[str] = None
     product_nutrition: Optional[Dict[str, Any]] = None
 
+    dirty: Optional[bool] = False
+
     # [{"key":"heart_disease","level":"red"}, ...]
     caution_factors: Optional[List[Dict[str, Any]]] = None
 
@@ -49,26 +51,7 @@ class ScanHistoryCreate(ScanHistoryBase):
     product_id: str | None
 
 
-class ScanHistoryUpdate(BaseModel):
-    scanned_at: Optional[datetime] = None
-    decision: Optional[ScanDecision] = None
-    display_name:  Optional[str] = None
-    display_category: Optional[str] = None
-    summary: Optional[str] = None
-    ai_total_score: Optional[int] = None
-
-    conditions: Optional[List[str]] = None
-    allergies: Optional[List[str]] = None
-    habits: Optional[List[str]] = None
-
-    ai_allergy_report: Optional[str] = None
-    ai_condition_report: Optional[str] = None
-    ai_alter_report: Optional[str] = None
-    ai_vegan_report: Optional[str] = None
-    ai_total_report: Optional[str] = None
-
-    caution_factors: Optional[List[Dict[str, Any]]] = None
-
+class ScanHistoryUpdate(ScanHistoryBase):
     model_config = ConfigDict(extra="forbid")
 
 

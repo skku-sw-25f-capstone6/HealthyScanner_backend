@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column,
     String,
     Float,
+    Boolean,
     Text,
     Integer,
     DateTime,
@@ -74,6 +75,7 @@ class ScanHistory(Base):
     product_ingredient: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
 
+
     caution_factors: Mapped[list[dict[str, str]] | None] = mapped_column(MySQLJSON, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -88,3 +90,9 @@ class ScanHistory(Base):
         onupdate=func.now(),
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    is_dirty: Mapped[bool] = mapped_column(
+        Boolean, 
+        nullable=False, 
+        default=False,
+    )
