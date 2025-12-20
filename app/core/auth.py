@@ -48,7 +48,7 @@ def decode_access_token(token: str) -> dict:
             token, 
             SECRET_KEY, 
             algorithms=[ALGORITHM],
-            leeway=10  # 시간 오차 허용 범위 추가
+            leeway=30  # 시간 오차 허용 범위 추가
         )
         return payload
     except jwt.ExpiredSignatureError:
