@@ -54,7 +54,7 @@ class ScanGetFullService:
 
         if scan.product_name:
             name = scan.product_name
-            if not scan.dirty:
+            if scan.dirty:
                 name = scan.display_name
 
         category = scan_history.display_category or "Uncategorized"
