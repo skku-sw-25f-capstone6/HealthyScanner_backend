@@ -2,6 +2,7 @@ import pandas as pd
 import uuid
 import json
 import re
+import traceback
 from app.core.database import SessionLocal
 from app.models.product import Product
 from app.models.nutrition import Nutrition
@@ -28,11 +29,10 @@ def run_final_migration():
 
     db = SessionLocal()
     try:
-        # enumerate를 사용하여 확실한 숫자 인덱스(idx)를 생성합니다.
         for idx, (row_idx, row) in enumerate(df.iterrows()):
             product_id = str(uuid.uuid4())
 
-            # 1. 알레르기 태그 처리
+            # 1. 알레르기 태그
             raw_allergy = row.get('알레르기성분')
             allergy_list = [item.strip() for item in str(raw_allergy).split(',')] if raw_allergy else []
 
@@ -46,9 +46,7 @@ def run_final_migration():
                 barcode=str(row.get('바코드번호', ''))
             )
             db.add(new_product)
-            
-            # 🔥 부모 데이터 Flush
-            db.flush()
+            db.flush() # 부모 ID 등록
 
             # 3. Ingredient 생성
             if row.get('원재료명'):
@@ -61,8 +59,9 @@ def run_final_migration():
                 )
                 db.add(new_ing)
 
-            # 4. Nutrition 생성
+            # 4. Nutrition 생성 (수정된 부분: id 추가)
             new_nutrition = Nutrition(
+                id=str(uuid.uuid4()),  # 🔥 여기가 핵심입니다! ID를 직접 생성해줘야 합니다.
                 product_id=product_id,
                 per_serving_grams=clean_numeric(row.get('1회 제공량', 0)),
                 calories=clean_numeric(row.get('열량(kcal)', 0)),
@@ -78,7 +77,6 @@ def run_final_migration():
             )
             db.add(new_nutrition)
 
-            # 이제 idx는 확실히 숫자형이므로 % 연산이 가능합니다.
             if idx % 10 == 0:
                 print(f"🚀 {idx}번째 처리 중: {row.get('제품명')}")
 
@@ -88,8 +86,6 @@ def run_final_migration():
     except Exception as e:
         db.rollback()
         print(f"❌ 오류 발생: {e}")
-        # 상세 에러 확인을 위해 에러 로그를 더 자세히 찍도록 함
-        import traceback
         traceback.print_exc()
     finally:
         db.close()
