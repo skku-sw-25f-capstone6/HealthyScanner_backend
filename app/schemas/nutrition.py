@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, field_validator, Field
+from pydantic import BaseModel, ConfigDict, field_validator, Field, ValidationInfo
 import re
 
 
@@ -25,12 +25,13 @@ class NutritionBase(BaseModel):
 
     @field_validator("*", mode="before")
     @classmethod
-    def extract_number(cls, v):
-        if isinstance(v, str):
-            # 1. 천 단위 구분 기호인 쉼표를 먼저 제거
-            v = v.replace(",", "")
+    def extract_number(cls, v, info: ValidationInfo): # [수정] info 인자 추가
+        # [추가] 숫자 변환을 하면 안 되는 필드들은 그냥 리턴
+        if info.field_name in ["id", "product_id", "label_version", "created_at", "updated_at"]:
+            return v
             
-            # 2. 정규식으로 숫자(소수점 포함)만 추출
+        if isinstance(v, str):
+            v = v.replace(",", "")
             match = re.search(r"(\d+(\.\d+)?)", v)
             if match:
                 return float(match.group(1))
