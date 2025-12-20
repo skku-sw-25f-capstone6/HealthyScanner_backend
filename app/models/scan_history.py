@@ -91,7 +91,7 @@ class ScanHistory(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime)
 
-    is_dirty: Mapped[bool] = mapped_column(
+    dirty: Mapped[bool] = mapped_column(
         Boolean, 
         nullable=False, 
         default=False,
