@@ -105,16 +105,30 @@ class ScanHistoryService:
 
             nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
 
-            if nutrition:
-                print(f"DEBUG TYPE CHECK: id={nutrition[0].id}, type={type(nutrition[0].id)}")
-                print(f"DEBUG TYPE CHECK: product_id={nutrition[0].product_id}, type={type(nutrition[0].product_id)}")
-                
+            print(f"\n======== [DEBUG] Nutrition Data Check ========")
+            print(f"Requested Product ID: {product_id}")
+            
+            if not nutrition:
+                print("Result: Empty List")
+            else:
+                print(f"Result Count: {len(nutrition)}")
+                for idx, item in enumerate(nutrition):
+                    print(f"--- Item {idx} ---")
+                    print(f"ID value: {repr(item.id)}")        # repr()로 감싸서 타입 확인 (따옴표 유무)
+                    print(f"ID type: {type(item.id)}")
+                    print(f"Product_ID value: {repr(item.product_id)}")
+                    print(f"Product_ID type: {type(item.product_id)}")
+                    # 혹시 __dict__에 매핑된 실제 값 확인
+                    print(f"Raw Dict: {item.__dict__}")
+            print(f"==============================================\n")
+            # ▲▲▲ [디버깅 코드 끝] ▲▲▲
+
             ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
 
             product_dict = ProductOut.model_validate(product).model_dump()
             
             nutrition_dict = (
-                NutritionOut.model_validate(nutrition).model_dump() if nutrition else None
+                NutritionOut.model_validate(nutrition[0]).model_dump() if nutrition else None
             )
 
             ingredient_list = [
