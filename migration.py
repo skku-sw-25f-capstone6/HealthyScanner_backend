@@ -20,9 +20,11 @@ def clean_numeric(value):
 
 def run_final_migration():
     try:
-        df = pd.read_csv("product_data.csv", encoding='utf-8')
-    except UnicodeDecodeError:
-        df = pd.read_csv("product_data.csv", encoding='cp949')
+        df = pd.read_excel("product_data.csv", engine='openpyxl')
+        print("✅ 엑셀 형식으로 파일을 읽어들였습니다.")
+    except Exception as e:
+        print(f"❌ 파일 읽기 실패: {e}")
+        return
 
     df = df.where(pd.notnull(df), None)
     db = SessionLocal()
