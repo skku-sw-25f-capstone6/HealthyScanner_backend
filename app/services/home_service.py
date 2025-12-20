@@ -65,11 +65,11 @@ class HomeService:
         for scan in list(representative.values())[:2]:
             scan_items.append(
                 {
-                    "name": scan.display_name,
+                    "name": scan.product_name if scan.product_name else scan.display_name,
                     "category": scan.display_category,
                     "scanID": scan.id,
                     "riskLevel": self._decision_to_risk_level(scan.decision),
-                    "summary": scan.ai_total_report,
+                    "summary": scan.summary,
                     "url": scan.image_url,
                 }
             )
