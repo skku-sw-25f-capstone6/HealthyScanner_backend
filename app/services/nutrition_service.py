@@ -20,4 +20,4 @@ class NutritionService:
 
     def get_id_by_product_id(self, product_id: str) -> Optional[Nutrition]:
         # NutritionDAL 이 static 메서드라면 이런 식으로
-        return self.nutrition_dal.get_id_by_product_id(self.db, product_id)
+        return self.nutrition_dal.get_id_by_product_id(self.db, product_id).id

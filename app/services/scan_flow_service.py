@@ -105,6 +105,7 @@ class ScanFlowService:
             nutrition_id = None
             ingredient_id = None
 
+
         if scan.scanned_at is None:
             raise RuntimeError("scan.scanned_at is None")
 
