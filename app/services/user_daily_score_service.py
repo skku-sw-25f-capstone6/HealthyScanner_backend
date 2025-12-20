@@ -127,7 +127,7 @@ class UserDailyScoreService:
                 decision_counts={},
                 formula_version=1,
                 dirty=0,
-                last_computed_at=datetime.now(),
+                last_computed_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 sync_state=1,
             )
             return self.user_daily_score_dal.create_or_get(self.db, uds_create)
@@ -151,7 +151,7 @@ class UserDailyScoreService:
             score=score,
             dirty=0,
             formula_version=1,
-            last_computed_at=datetime.now()
+            last_computed_at=datetime.now(timezone.utc).replace(tzinfo=None),
         )
 
         return self.user_daily_score_dal.update(

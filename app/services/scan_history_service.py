@@ -124,7 +124,7 @@ class ScanHistoryService:
             nutrition_dict = {"raw_label": nutrition_text} if nutrition_text else None
             ingredient_list = []
 
-            d = datetime.now()
+            d = datetime.now(timezone.utc)
             n = self.scan_history_dal.count_scans_date(
                 db=self.db,
                 user_id=user_id,
@@ -155,7 +155,7 @@ class ScanHistoryService:
             mime = image.content_type or "image/jpeg"
             image_data_url = f"data:{mime};base64,{b64}"
             
-            d = datetime.now()
+            d = datetime.now(timezone.utc)
             n = self.scan_history_dal.count_scans_date(
                 db=self.db,
                 user_id=user_id,
@@ -207,7 +207,7 @@ class ScanHistoryService:
         product_nutrition: Optional[dict[str, str]] = ai_result.product_nutrition
         product_ingredient: Optional[str] = ai_result.product_ingredient
 
-        now_aware = datetime.now()
+        now_aware = datetime.now(timezone.utc)
         scanned_at = now_aware.replace(tzinfo=None)  # naive datetime 저장
     
         data = ScanHistoryCreate(

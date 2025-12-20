@@ -30,7 +30,7 @@ def create_access_token(
     if expires_delta is None:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    now = datetime.now()
+    now = datetime.utcnow()
     payload = {
         "sub": user_id,
         "iat": now,
@@ -42,14 +42,11 @@ def create_access_token(
 
 
 def decode_access_token(token: str) -> dict:
+    """
+    JWT를 디코드하고, 유효하지 않으면 HTTP 401을 던진다.
+    """
     try:
-        # leeway=10을 추가하여 10초 정도의 시간 차이는 허용합니다.
-        payload = jwt.decode(
-            token, 
-            SECRET_KEY, 
-            algorithms=[ALGORITHM],
-            leeway=30  # 시간 오차 허용 범위 추가
-        )
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(
