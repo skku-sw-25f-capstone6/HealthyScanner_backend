@@ -104,15 +104,19 @@ class ScanHistoryService:
             saved_image_url = getattr(product, "image_url", None)
 
             nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
+
+            if nutrition:
+                print(f"DEBUG TYPE CHECK: id={nutrition[0].id}, type={type(nutrition[0].id)}")
+                print(f"DEBUG TYPE CHECK: product_id={nutrition[0].product_id}, type={type(nutrition[0].product_id)}")
+                
             ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
 
             product_dict = ProductOut.model_validate(product).model_dump()
             
-            # [수정된 부분] nutrition이 리스트이므로 첫 번째 요소(nutrition[0])를 사용
             nutrition_dict = (
-                NutritionOut.model_validate(nutrition[0]).model_dump() if nutrition else None
+                NutritionOut.model_validate(nutrition).model_dump() if nutrition else None
             )
-            
+
             ingredient_list = [
                 IngredientOut.model_validate(i).model_dump() for i in ingredients
             ]
