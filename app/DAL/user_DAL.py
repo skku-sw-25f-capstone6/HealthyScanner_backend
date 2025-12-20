@@ -70,7 +70,7 @@ class UserDAL:
         if not user:
             return False
 
-        user.deleted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        user.deleted_at = datetime.now()
         db.commit()
         return True
     

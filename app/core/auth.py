@@ -30,7 +30,7 @@ def create_access_token(
     if expires_delta is None:
         expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    now = datetime.utcnow()
+    now = datetime.now()
     payload = {
         "sub": user_id,
         "iat": now,

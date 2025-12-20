@@ -12,7 +12,7 @@ from app.schemas.scan_history import ScanHistoryCreate, ScanHistoryUpdate
 class ScanHistoryDAL:
     @staticmethod
     def create(db: Session, sh_in: ScanHistoryCreate) -> ScanHistory:
-        scanned_at = sh_in.scanned_at or datetime.now(timezone.utc).replace(tzinfo=None)
+        scanned_at = sh_in.scanned_at or datetime.now()
 
         scan = ScanHistory(
             id=str(uuid4()),
@@ -168,7 +168,7 @@ class ScanHistoryDAL:
         if not scan:
             return False
 
-        scan.deleted_at = datetime.now(timezone.utc)
+        scan.deleted_at = datetime.now()
         db.commit()
         return True
 

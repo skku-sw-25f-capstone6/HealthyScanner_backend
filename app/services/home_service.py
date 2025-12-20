@@ -29,7 +29,7 @@ class HomeService:
         return "green"
 
     def get_home(self, user_id: str) -> Dict[str, Any]:
-        today: date = datetime.now(timezone.utc).date()
+        today: date = datetime.now().date()
 
         # 오늘 점수
         uds = self.user_daily_score_service.user_daily_score_dal.get(

@@ -126,7 +126,7 @@ def kakao_callback(
             kakao_user_id=kakao_user_id,
             name=nickname,
             profile_image_url=profile_image,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(),
         )
         db.add(user)
 
