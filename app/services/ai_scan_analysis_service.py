@@ -243,7 +243,7 @@ class AiScanAnalysisService:
 - Conditions/Allergies/Diet 허용값에 대해서 이걸 보고 한국말로 바꿔줘:
 {ENG_TO_KOR}
 
-- 영양 성분표에 대해서 값은 이미지에 적힌 숫자만 포함해줘.
+- 영양 성분표에 대해서 값은 이미지에 적힌 숫자와 단위를 그대로 포함해줘. (예: "160mg", "1 g 미만")
 - 영양 성분표에 대해서 아래를 참고하여 영어로 바꿔줘:
 {NUTRITION_MAP}
 

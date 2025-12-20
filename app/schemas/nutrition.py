@@ -27,7 +27,10 @@ class NutritionBase(BaseModel):
     @classmethod
     def extract_number(cls, v):
         if isinstance(v, str):
-            # 정규식으로 숫자(소수점 포함)만 추출
+            # 1. 천 단위 구분 기호인 쉼표를 먼저 제거
+            v = v.replace(",", "")
+            
+            # 2. 정규식으로 숫자(소수점 포함)만 추출
             match = re.search(r"(\d+(\.\d+)?)", v)
             if match:
                 return float(match.group(1))
