@@ -92,10 +92,10 @@ class ScanHistoryService:
             if product_id is None:
                 raise HTTPException(404, "Product not found")
             
-            if image is not None:
-                await self.product_service.attach_image(self.db, product_id, image)
-
             product = self.product_dal.get(self.db, str(product_id))
+
+            #if product.image_url is None and image is not None:
+            #    await self.product_service.attach_image(self.db, product_id, image)
             
             # db에 무조건 있다는 가정
             # Unknown Product는 안 될 거임
