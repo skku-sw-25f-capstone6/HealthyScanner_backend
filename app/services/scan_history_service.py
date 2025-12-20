@@ -107,9 +107,12 @@ class ScanHistoryService:
             ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
 
             product_dict = ProductOut.model_validate(product).model_dump()
+            
+            # [수정된 부분] nutrition이 리스트이므로 첫 번째 요소(nutrition[0])를 사용
             nutrition_dict = (
-                NutritionOut.model_validate(nutrition).model_dump() if nutrition else None
+                NutritionOut.model_validate(nutrition[0]).model_dump() if nutrition else None
             )
+            
             ingredient_list = [
                 IngredientOut.model_validate(i).model_dump() for i in ingredients
             ]
