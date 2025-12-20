@@ -20,9 +20,9 @@ def clean_numeric(value):
 
 def run_final_migration():
     try:
-        df = pd.read_csv("제품정보.xlsx - Sheet1.csv", encoding='utf-8')
+        df = pd.read_csv("product_data.csv", encoding='utf-8')
     except UnicodeDecodeError:
-        df = pd.read_csv("제품정보.xlsx - Sheet1.csv", encoding='cp949')
+        df = pd.read_csv("product_data.csv", encoding='cp949')
 
     df = df.where(pd.notnull(df), None)
     db = SessionLocal()
