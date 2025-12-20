@@ -24,7 +24,13 @@ def run_final_migration():
         print(f"❌ 파일 읽기 실패: {e}")
         return
 
+    # 1. 컬럼명 정리
     df.columns = [col.strip() for col in df.columns]
+    
+    # 2. [중요] 제품명이 없는 행은 가차없이 삭제 (쓰레기 데이터 방지)
+    df = df.dropna(subset=['제품명'])
+    
+    # 3. NaN 처리
     df = df.where(pd.notnull(df), None)
 
     db = SessionLocal()
@@ -32,23 +38,36 @@ def run_final_migration():
         for idx, (row_idx, row) in enumerate(df.iterrows()):
             product_id = str(uuid.uuid4())
 
-            # 1. 알레르기 태그
+            # --- 바코드 안전 처리 ---
+            # 값이 없거나 'nan' 문자열이면 None으로 처리 (DB에서 NULL 허용 시 중복 에러 안 남)
+            raw_barcode = row.get('바코드번호')
+            if not raw_barcode or str(raw_barcode).lower() == 'nan':
+                barcode_val = None
+            else:
+                # 소수점(.0) 제거 (예: 8801234.0 -> 8801234)
+                barcode_str = str(raw_barcode)
+                if barcode_str.endswith('.0'):
+                    barcode_val = barcode_str[:-2]
+                else:
+                    barcode_val = barcode_str
+
+            # --- 알레르기 태그 처리 ---
             raw_allergy = row.get('알레르기성분')
             allergy_list = [item.strip() for item in str(raw_allergy).split(',')] if raw_allergy else []
 
-            # 2. Product 생성
+            # --- Product 생성 ---
             new_product = Product(
                 id=product_id,
                 name=row.get('제품명'),
                 category=row.get('식품유형'),
                 allergens=raw_allergy,
                 trace_allergens=row.get('혼입가능성분'),
-                barcode=str(row.get('바코드번호', ''))
+                barcode=barcode_val  # 수정된 바코드 값 사용
             )
             db.add(new_product)
-            db.flush() # 부모 ID 등록
+            db.flush() 
 
-            # 3. Ingredient 생성
+            # --- Ingredient 생성 ---
             if row.get('원재료명'):
                 new_ing = Ingredient(
                     id=str(uuid.uuid4()),
@@ -59,9 +78,9 @@ def run_final_migration():
                 )
                 db.add(new_ing)
 
-            # 4. Nutrition 생성 (수정된 부분: id 추가)
+            # --- Nutrition 생성 ---
             new_nutrition = Nutrition(
-                id=str(uuid.uuid4()),  # 🔥 여기가 핵심입니다! ID를 직접 생성해줘야 합니다.
+                id=str(uuid.uuid4()),
                 product_id=product_id,
                 per_serving_grams=clean_numeric(row.get('1회 제공량', 0)),
                 calories=clean_numeric(row.get('열량(kcal)', 0)),
@@ -86,6 +105,8 @@ def run_final_migration():
     except Exception as e:
         db.rollback()
         print(f"❌ 오류 발생: {e}")
+        # 에러 발생 시 어떤 데이터에서 죽었는지 확인
+        print(f"💀 문제의 데이터: {row.get('제품명')}, 바코드: {row.get('바코드번호')}")
         traceback.print_exc()
     finally:
         db.close()
