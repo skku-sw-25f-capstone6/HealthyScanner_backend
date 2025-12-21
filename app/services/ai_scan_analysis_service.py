@@ -226,6 +226,7 @@ class AiScanAnalysisService:
   - `brief`: 공백 포함 15자 이내 (핵심 요약)
   - `report`: 100자 이내 (판단 근거 설명)
   - `ai_total_summary`: 50자 이내 (전체 요약)
+- **Caution Factors**: `caution_factors`의 `key` 값은 반드시 **한국어**로 출력하세요. {ENG_TO_KOR}를 참고하여 변환하되(예: 'wheat' -> '밀'), 매핑에 없는 경우 한국어로 번역하여 적으세요.
 - **영양성분 Key**: {NUTRITION_MAP}를 참고하여 영어로 변환하세요. 값은 단위(g, mg 등)를 반드시 포함하세요.
 - **알레르기 필터링**: 사용자 프로필({user_allergies})에 없는 성분은 제품에 포함되어 있더라도 알레르기 위험으로 언급하지 마세요.
 
