@@ -34,6 +34,10 @@ class ScanHistoryDAL:
             ai_vegan_report=sh_in.ai_vegan_report,
             ai_total_report=sh_in.ai_total_report,
             caution_factors=sh_in.caution_factors,
+            product_name=sh_in.product_name,
+            product_nutrition=sh_in.product_nutrition,
+            product_ingredient=sh_in.product_ingredient,
+            dirty=False
         )
         db.add(scan)
         db.commit()

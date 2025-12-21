@@ -23,6 +23,8 @@ class ProductDAL:
             country=product_in.country,
             notes=product_in.notes,
             score=product_in.score,
+            allergens=product_in.allergens,
+            trace_allergens=product_in.trace_allergens
         )
         db.add(product)
         db.commit()

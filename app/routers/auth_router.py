@@ -1,11 +1,12 @@
+from urllib import request
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-
+from uuid import uuid4
 from app.core.database import get_db
 from app.models.user import User
 from app.core.auth import create_access_token, get_current_user, create_app_refresh_token
-
+from fastapi import Request
 import requests
 import os
 from datetime import datetime
@@ -117,11 +118,12 @@ def kakao_callback(
     # -------------------------------------------------
     # Step 3) User Upsert
     # -------------------------------------------------
-    user = db.query(User).filter(User.id == kakao_user_id).first()
+    user = db.query(User).filter(User.kakao_user_id == kakao_user_id, User.deleted_at.is_(None),).first()
 
     if not user:
         user = User(
-            id=kakao_user_id,
+            id=str(uuid4()),
+            kakao_user_id=kakao_user_id,
             name=nickname,
             profile_image_url=profile_image,
             created_at=datetime.utcnow(),
@@ -138,7 +140,7 @@ def kakao_callback(
     # -------------------------------------------------
     # 🔐 App Token Issuance
     # -------------------------------------------------
-    app_access_token = create_access_token(kakao_user_id)
+    app_access_token = create_access_token(user.id)
     app_refresh_token = create_app_refresh_token()
 
     user.app_refresh_token = app_refresh_token
@@ -159,8 +161,8 @@ def kakao_callback(
       "token_type": token_type,
       "expires_in": expires_in,
       "refresh_expires_in": refresh_expires_in,
-
-      "user_id": kakao_user_id,
+      "kakao_user_id" : kakao_user_id,
+      "user_id": user.id,
     })
 
     
@@ -184,19 +186,27 @@ def get_me(user: User = Depends(get_current_user)):
 # ---------------------------------------------------------
 @router.post("/auth/logout")
 def logout(
-    user: User = Depends(get_current_user),
+    request: Request,
     db: Session = Depends(get_db),
 ):
-    user.app_refresh_token = None 
-    # (선택) Kakao token 정리 
-    user.access_token = None 
-    user.refresh_token = None 
-    user.token_type = None 
-    user.expires_in = None 
-    user.refresh_expires_in = None 
+    token = request.headers.get("Authorization")
+    if not token:
+        return {"message": "Already logged out.(No Token Found)"}
+
+    try:
+        user = get_current_user(request, db=db)
+    except Exception:
+        return {"message": "already logged out"}
+
+    user.app_refresh_token = None
+    user.access_token = None
+    user.refresh_token = None
+    user.token_type = None
+    user.expires_in = None
+    user.refresh_expires_in = None
     db.commit()
 
-    return {"message": "logout success"}
+    return {"message": "logout 성공!"}
 
 
 # ---------------------------------------------------------
@@ -222,7 +232,7 @@ def unlink_account(
         },
         data={
             "target_id_type": "user_id",
-            "target_id": user.id,  # 카카오 user_id
+            "target_id": user.kakao_user_id,  # 카카오 user_id
         },
         timeout=5,
     )
@@ -241,7 +251,6 @@ def unlink_account(
         text("DELETE FROM scan_history WHERE user_id = :uid"),
         {"uid": user.id},
     )
-
     
     db.execute(
         text("DELETE FROM user WHERE id = :uid"),
@@ -262,7 +271,7 @@ class RefreshTokenRequest(BaseModel):
 # ---------------------------------------------------------
 # 6️⃣ Refresh Access Token
 # ---------------------------------------------------------
-@router.post("/auth/refresh")
+@router.post("/v1/auth/refresh")
 def refresh_access_token(
     body: RefreshTokenRequest,
     db: Session = Depends(get_db),

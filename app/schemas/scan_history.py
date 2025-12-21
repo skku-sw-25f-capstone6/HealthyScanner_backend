@@ -36,6 +36,12 @@ class ScanHistoryBase(BaseModel):
     ai_condition_brief: Optional[str] = None
     ai_alter_brief: Optional[str] = None
 
+    product_name: Optional[str] = None
+    product_ingredient: Optional[str] = None
+    product_nutrition: Optional[Dict[str, Any]] = None
+
+    dirty: Optional[bool] = False
+
     # [{"key":"heart_disease","level":"red"}, ...]
     caution_factors: Optional[List[Dict[str, Any]]] = None
 
@@ -45,26 +51,7 @@ class ScanHistoryCreate(ScanHistoryBase):
     product_id: str | None
 
 
-class ScanHistoryUpdate(BaseModel):
-    scanned_at: Optional[datetime] = None
-    decision: Optional[ScanDecision] = None
-    display_name:  Optional[str] = None
-    display_category: Optional[str] = None
-    summary: Optional[str] = None
-    ai_total_score: Optional[int] = None
-
-    conditions: Optional[List[str]] = None
-    allergies: Optional[List[str]] = None
-    habits: Optional[List[str]] = None
-
-    ai_allergy_report: Optional[str] = None
-    ai_condition_report: Optional[str] = None
-    ai_alter_report: Optional[str] = None
-    ai_vegan_report: Optional[str] = None
-    ai_total_report: Optional[str] = None
-
-    caution_factors: Optional[List[Dict[str, Any]]] = None
-
+class ScanHistoryUpdate(ScanHistoryBase):
     model_config = ConfigDict(extra="forbid")
 
 
@@ -97,9 +84,9 @@ class FaceType(str, Enum):
     NOT_BAD = "NOT BAD"
 
 class ReportBlock(BaseModel):
-    brief_report: str
+    brief_report: Optional[str] = None
     face: FaceType
-    report: str
+    report: Optional[str] = None
 
 class AlternativeReport(ReportBlock):
     """필요하면 나중에 필드 추가할 용도, 지금은 ReportBlock과 동일"""
@@ -125,6 +112,7 @@ class ScanDetailOut(BaseModel):
 class ScanSummaryOut(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
+    scanID: Optional[str] = None
     riskLevel: Optional[str] = None
     summary: Optional[str] = None
     url: Optional[str] = None

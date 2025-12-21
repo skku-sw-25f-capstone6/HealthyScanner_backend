@@ -22,6 +22,9 @@ class ProductBase(BaseModel):
 
     score: Optional[int] = None
 
+    allergens: Optional[str] = None
+    trace_allergens: Optional[str] = None
+
 
 class ProductCreate(ProductBase):
     # 일단 전부 optional로 두고, 서버에서 필요한 최소값만 나중에 검증해도 됨

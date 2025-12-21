@@ -20,4 +20,4 @@ class IngredientService:
 
     def get_id_by_product_id(self, product_id: str) -> Optional[Ingredient]:
         # IngredientDAL 이 static 메서드라면 이런 식으로
-        return self.ingredient_dal.get_id_by_product_id(self.db, product_id)
+        return self.ingredient_dal.get_id_by_product_id(self.db, product_id).id

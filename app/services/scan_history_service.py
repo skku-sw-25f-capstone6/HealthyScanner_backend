@@ -92,10 +92,10 @@ class ScanHistoryService:
             if product_id is None:
                 raise HTTPException(404, "Product not found")
             
-            if image is not None:
-                await self.product_service.attach_image(self.db, product_id, image)
-
             product = self.product_dal.get(self.db, str(product_id))
+
+            #if product.image_url is None and image is not None:
+            #    await self.product_service.attach_image(self.db, product_id, image)
             
             # db에 무조건 있다는 가정
             # Unknown Product는 안 될 거임
@@ -104,12 +104,33 @@ class ScanHistoryService:
             saved_image_url = getattr(product, "image_url", None)
 
             nutrition = self.nutrition_dal.get_by_product_id(self.db, str(product_id))
+
+            print(f"\n======== [DEBUG] Nutrition Data Check ========")
+            print(f"Requested Product ID: {product_id}")
+            
+            if not nutrition:
+                print("Result: Empty List")
+            else:
+                print(f"Result Count: {len(nutrition)}")
+                for idx, item in enumerate(nutrition):
+                    print(f"--- Item {idx} ---")
+                    print(f"ID value: {repr(item.id)}")        # repr()로 감싸서 타입 확인 (따옴표 유무)
+                    print(f"ID type: {type(item.id)}")
+                    print(f"Product_ID value: {repr(item.product_id)}")
+                    print(f"Product_ID type: {type(item.product_id)}")
+                    # 혹시 __dict__에 매핑된 실제 값 확인
+                    print(f"Raw Dict: {item.__dict__}")
+            print(f"==============================================\n")
+            # ▲▲▲ [디버깅 코드 끝] ▲▲▲
+
             ingredients = self.ingredient_dal.get_by_product_id(self.db, str(product_id))
 
             product_dict = ProductOut.model_validate(product).model_dump()
+            
             nutrition_dict = (
-                NutritionOut.model_validate(nutrition).model_dump() if nutrition else None
+                NutritionOut.model_validate(nutrition[0]).model_dump() if nutrition else None
             )
+
             ingredient_list = [
                 IngredientOut.model_validate(i).model_dump() for i in ingredients
             ]
@@ -202,7 +223,10 @@ class ScanHistoryService:
 
         caution_factors_raw: Optional[List[Dict[str, str]]] = ai_result.caution_factors
         caution_factors: Optional[List[Dict[str, str]]] = caution_factors_raw
-
+    
+        product_name: Optional[str] = ai_result.product_name
+        product_nutrition: Optional[dict[str, str]] = ai_result.product_nutrition
+        product_ingredient: Optional[str] = ai_result.product_ingredient
 
         now_aware = datetime.now(timezone.utc)
         scanned_at = now_aware.replace(tzinfo=None)  # naive datetime 저장
@@ -229,7 +253,11 @@ class ScanHistoryService:
             ai_vegan_brief=ai_vegan_brief,
             ai_alter_brief=ai_alter_brief,
             ai_condition_brief=ai_condition_brief,
-            ai_allergy_brief=ai_allergy_brief
+            ai_allergy_brief=ai_allergy_brief,
+            product_name=product_name,
+            product_nutrition=product_nutrition,
+            product_ingredient=product_ingredient,
+            dirty=False
         )
 
         scan = self.scan_history_dal.create(self.db, data)
@@ -249,6 +277,7 @@ class ScanHistoryService:
         update_in = ScanHistoryUpdate(
             display_name=display_name,
             display_category=display_category,
+            dirty=True,
         )
 
         scan = self.scan_history_dal.update(self.db, scan_id, update_in)
@@ -277,10 +306,11 @@ class ScanHistoryService:
 
             scan_list.append(
                 ScanSummaryOut(
-                    name=s.display_name,
+                    name=s.product_name if not s.dirty else s.display_name,
                     category=s.display_category,
+                    scanID=s.id,
                     riskLevel=risk_level,     # DB에 컬럼 있으면
-                    summary=s.ai_total_report,  # or summary 필드
+                    summary=s.summary,  # or summary 필드
                     url=s.image_url,            # 이미지 저장한 컬럼명
                 )
             )

@@ -16,18 +16,20 @@ SCAN_RESULT_SCHEMA_HINT = """
     "ai_allergy_report": "string or null",
     "ai_condition_brief": "string or null",
     "ai_condition_report": "string or null",
-    "ai_alter_brief": "string or null",
-    "ai_alter_report": "string or null",
+    "ai_alter_brief": "null",
+    "ai_alter_report": "null",
     "ai_vegan_brief": "string or null",
     "ai_vegan_report": "string or null",
     "ai_total_report": "string or null",
     "product_name": "string or null",
     "product_nutrition": {string: value, ...} or null,
-    "product_ingredients": ["string", ...] or null,
+    "product_ingredient": "string or null",
     "caution_factors": [
-      "key": "string (e.g. 'hypertension', 'heart_disease', 'kidney_disease', ...)",
-      "level": "red" | "yellow" | "green"
-    ] or null,
+        {
+            "key": "string",
+            "level": "red" | "yellow" | "green"
+        }
+    ] or null
     "ai_total_summary": "string"
 }
 """
@@ -83,6 +85,54 @@ Example:
 {"diet":"pescatarian"}
 """
 
+NUTRITION_MAP = """
+per_serving_grams: 총 내용량 또는 1회 제공량
+calories: 열량
+carbohydrate: 탄수화물
+sugars: 당류
+protein: 단백질
+fat: 지방
+saturated_fat: 포화지방
+trans_fat: 트랜스지방
+sodium: 나트륨
+cholesterol: 콜레스테롤
+"""
+
+# 영문 코드를 한글 라벨로 변환하는 마스터 맵
+ENG_TO_KOR = """{
+    # Diet
+    'regular': '일반식',
+    'pescatarian': '생선 채식',
+    'lactoVegetarian': '유제품 허용 채식',
+    'ovoVegetarian': '달걀 허용 채식',
+    'vegan': '채식',
+    
+    # Conditions
+    'hypertension': '고혈압',
+    'liverDisease': '간질환',
+    'gout': '통풍',
+    'diabetes': '당뇨병',
+    'hyperlipidemia': '고지혈증',
+    'kidneyDisease': '신장질환',
+    'thyroidDisease': '갑상선질환',
+    
+    # Allergies
+    'crustacean': '갑각류',
+    'wheat': '밀',
+    'shellfish': '조개류',
+    'shrimp': '새우',
+    'dairy': '유제품',
+    'beef': '소고기',
+    'nut': '견과류',
+    'peanut': '땅콩',
+    'peach': '복숭아',
+    'egg': '계란',
+    'apple': '사과',
+    'pineapple': '파인애플',
+    'fish': '생선',
+    'soy': '대두(콩)',
+}"""
+
 class AiScanAnalysisService:
     def __init__(self, openai_client):
         self.client = openai_client
@@ -99,7 +149,8 @@ class AiScanAnalysisService:
         # user_profile: 현재 유저 정보(딕셔너리)
         # product: 현재 상품 정보(딕셔너리)
 
-        # 얘네 둘은 애초에 함수가 호출될 때부터 기본값은 일단 갖고 있다고 보는 거임
+        user_allergies = user_profile.get("allergies", [])
+        user_conditions = user_profile.get("conditions", [])
 
         # 바코드와 이미지 분석의 경우 없는 정보가 없음
         if analyze_type == "barcode_image":
@@ -147,49 +198,45 @@ class AiScanAnalysisService:
         else:
             product_text = "Product info missing"
         return f"""
-너는 HealthyScanner 앱의 "개인 맞춤형 인공지능 영양사"야.
-사용자의 프로필과 제품 정보를 바탕으로 섭취 적합성을 판단하고, 사진(OCR)에서 직접 추출한 데이터를 결과물에 포함하는 것이 네 핵심 임무야.
+# ROLE
+당신은 'HealthyScanner' 앱의 전문 AI 영양사입니다. 사용자의 건강 프로필과 식품 정보를 대조하여 안전성을 분석하세요.
 
-[입력 데이터 정보]
+# INPUT DATA
 1. Analyze Type: {analyze_type}
-2. User Profile: {user_profile}
-3. Product Info: {product_text} (N/A일 수 있음)
-4. Nutrition Info: {nutrition_text} (N/A일 수 있음)
-5. Ingredients: {ingredient_text} (N/A일 수 있음)
-6. Image Data: (함께 전달된 이미지 파일)
+2. User Profile: {{ "allergies": {user_allergies}, "conditions": {user_conditions}, "diet": "{user_profile.get('habits')}" }}
+3. Provided Context:
+   - Product Info: {product if product else "N/A"}
+   - Nutrition Info: {nutrition if nutrition else "N/A"}
+   - Ingredients List: {ingredients if ingredients else "N/A"}
+4. Image: (제공된 이미지 참고)
 
-[수행 지침: 데이터 추출 및 보존]
-- **데이터 발굴**: 제공된 텍스트 정보가 부족(N/A 또는 Missing)하더라도, 함께 제공된 이미지를 OCR로 분석하여 다음 필드를 반드시 채워야 해.
-  - `product_name`: 이미지에서 확인되는 브랜드와 제품명을 정확히 추출해.
-  - `product_nutrition`: 이미지의 영양성분표에서 읽은 구체적 수치(당류, 지방, 단백질 등)를 JSON 형태로 구성해.
-  - `product_ingredients`: 이미지의 원재료명 섹션에서 확인되는 모든 성분을 리스트로 만들어.
-- **추측 금지**: 이미지나 텍스트에 없는 구체적인 숫자나 성분명을 지어내지 마. 보이지 않는다면 null로 처리하되, 정성적인 분석(예: "당류가 높아 보임")으로 대체해.
+# ANALYSIS STEPS (Chain of Thought)
+1. **OCR Data Mining**: 이미지에서 제품명, 영양성분(수치 및 단위), 원재료명을 누락 없이 추출하세요. 텍스트 정보보다 이미지에서 직접 읽은 정보를 최우선합니다.
+2. **Safety Check**: 
+   - 사용자의 알레르기({user_allergies})가 원재료명에 직접 포함되었는지 확인하세요.
+   - "이 제품은 ~을 사용한 제조시설에서 제조하고 있습니다" 같은 혼입 가능성 문구를 찾으세요.
+3. **Decision Logic**:
+   - **Avoid (Red)**: 알레르기 성분 직접 포함.
+   - **Caution (Yellow)**: 제조시설 공유 문구 발견, 혹은 사용자의 질환({user_conditions})에 부적합한 성분(예: 당뇨인데 고당류) 발견 시.
+   - **OK (Green)**: 위 위험 요소가 전혀 없을 때.
 
-[수행 지침: UI 최적화 분석]
-- **Decision (판단)**: "avoid", "caution", "ok" 중 하나만 선택해. 정보가 부족하면 사용자의 안전을 위해 보수적으로(avoid/caution) 판단해.
-- **Brief vs Report (요약과 상세)**:
-  - `ai_*_brief`: **[빨간 박스/UI 전용]** 아주 짧고 강렬한 핵심 요약이야. 15자 내외로 작성해. (예: "당뇨 주의: 고당분", "땅콩 알레르기 위험")
-  - `ai_*_report`: 그 판단의 근거를 사용자에게 친절하게 설명해줘.
-- **Summary (전체 요약)**:
-  - `ai_total_summary`: 전체 분석 결과를 한두 문장으로 요약해. **공백 포함 반드시 50자 이내**로 작성해야 해.
+# RESPONSE CONSTRAINTS (엄격 준수)
+- **언어**: 한국어 (친절한 '~해요'체)
+- **글자 수**: 
+  - `brief`: 공백 포함 15자 이내 (핵심 요약)
+  - `report`: 100자 이내 (판단 근거 설명)
+  - `ai_total_summary`: 50자 이내 (전체 요약)
+- **Caution Factors**: `caution_factors`의 `key` 값은 반드시 **한국어**로 출력하세요. {ENG_TO_KOR}를 참고하여 변환하되(예: 'wheat' -> '밀'), 매핑에 없는 경우 한국어로 번역하여 적으세요.
+- **영양성분 Key**: {NUTRITION_MAP}를 참고하여 영어로 변환하세요. 값은 단위(g, mg 등)를 반드시 포함하세요.
+- **알레르기 필터링**: 사용자 프로필({user_allergies})에 없는 성분은 제품에 포함되어 있더라도 알레르기 위험으로 언급하지 마세요.
 
-[반환 형식 준수]
-반드시 아래 JSON 구조만 반환하고, JSON 외의 텍스트는 포함하지 마.
-
+# OUTPUT FORMAT
+반드시 아래 JSON 구조만 반환하세요.
 {SCAN_RESULT_SCHEMA_HINT}
 
-[값 범위 및 스키마 참조]
-- ai_total_score: 0~100 (정수)
-- caution_factors: 주의 요소가 있을 때만 {{"key": "이유", "level": "색상"}} 리스트로 구성.
-- Conditions/Allergies/Diet 허용값:
-{CONDITIONS_SCHEMA_HINT}
-{ALLERGIES_SCHEMA_HINT}
-{DIET_SCHEMA_HINT}
-
-[언어 및 톤앤매너]
-- 모든 설명은 한국어로 작성해.
-- 사용자에게 직접 말하듯이 친절하고 쉬운 용어를 사용해.
-        """.strip()
+# REFERENCE (Mapping Guide)
+- 질환/알레르기 한글화: {ENG_TO_KOR}
+""".strip()
 
     def _fallback(self, msg: str) -> AiScanResult:
         return AiScanResult(
@@ -208,7 +255,7 @@ class AiScanAnalysisService:
             ai_total_summary="Error, fallback",
             product_name=None,
             product_nutrition=None,
-            product_ingredients=None,
+            product_ingredient=None,
         )
 
     async def analyze(
@@ -235,8 +282,7 @@ class AiScanAnalysisService:
             content.append(
                 {
                     "type": "image_url",
-                    "image_url": {"url": image_data_url},
-                    "detail": "high"
+                    "image_url": {"url": image_data_url, "detail": "high"},
                 }
             )
         
@@ -245,7 +291,7 @@ class AiScanAnalysisService:
 
         try:
             resp = await self.client.chat.completions.create(
-                model="gpt-4o-mini",      # 너가 쓰고 싶은 모델로 변경
+                model="gpt-5.2",      # 너가 쓰고 싶은 모델로 변경
                 messages=[
                     {
                         "role": "user", 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from typing import Dict, Any, List, Optional, cast
 
 from sqlalchemy.orm import Session
@@ -29,7 +29,15 @@ class HomeService:
         return "green"
 
     def get_home(self, user_id: str) -> Dict[str, Any]:
-        today: date = datetime.now(timezone.utc).date()
+        kst = timezone(timedelta(hours=9))
+        now_kst = datetime.now(kst)
+        today_start_kst = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end_kst = today_start_kst + timedelta(days=1)
+
+        # 2. 이를 UTC 시각으로 변환 (필터링 기준)
+        start_utc = today_start_kst.astimezone(timezone.utc).replace(tzinfo=None)
+        end_utc = today_end_kst.astimezone(timezone.utc).replace(tzinfo=None)
+        today: date = datetime.now(kst).date()
 
         # 오늘 점수
         uds = self.user_daily_score_service.user_daily_score_dal.get(
@@ -47,7 +55,11 @@ class HomeService:
         # 모든 스캔 (최신순)
         all_scans: List[ScanHistory] = (
             self.db.query(ScanHistory)
-            .filter(ScanHistory.user_id == user_id)
+            .filter(
+                ScanHistory.user_id == user_id,
+                ScanHistory.scanned_at >= start_utc,
+                ScanHistory.scanned_at < end_utc
+            )
             .order_by(ScanHistory.scanned_at.desc())
             .all()
         )
@@ -65,10 +77,11 @@ class HomeService:
         for scan in list(representative.values())[:2]:
             scan_items.append(
                 {
-                    "name": scan.display_name,
+                    "name": scan.product_name if not scan.dirty else scan.display_name,
                     "category": scan.display_category,
+                    "scanID": scan.id,
                     "riskLevel": self._decision_to_risk_level(scan.decision),
-                    "summary": scan.ai_total_report,
+                    "summary": scan.summary,
                     "url": scan.image_url,
                 }
             )

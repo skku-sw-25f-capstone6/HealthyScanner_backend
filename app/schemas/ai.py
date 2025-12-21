@@ -18,4 +18,4 @@ class AiScanResult(BaseModel):
 
     product_name: Optional[str]
     product_nutrition: Optional[Dict[str, Any]]
-    product_ingredients: Optional[List[str]]
+    product_ingredient: Optional[str]
