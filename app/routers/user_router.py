@@ -138,12 +138,6 @@ def update_profile(
         current_user.allergies == profile.allergies
     )
 
-    if same_data:
-        raise HTTPException(
-            status_code=409,
-            detail="이미 동일한 내용의 프로필이 존재합니다."
-        )
-
     current_user.habits = profile.habits
     current_user.conditions = profile.conditions
     current_user.allergies = profile.allergies
